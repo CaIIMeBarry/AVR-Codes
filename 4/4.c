@@ -1,0 +1,55 @@
+#include <mega32.h>
+#include <delay.h>
+
+void main(void)
+{
+    const unsigned char scroll_sequence[] = {
+        ~0x00, ~0x00, ~0x00,  // BLANK, BLANK, BLANK
+        ~0x77,                // A
+        ~0x38,                // L
+        ~0x06,                // I
+        ~0x00, ~0x00, ~0x00, ~0x00 // Trailing BLANKs
+    };
+
+    unsigned char i;
+    unsigned char persistence_loop;
+    unsigned char display_buffer[4];
+
+    DDRA = 0xFF;
+    DDRC = 0xFF;
+
+    while (1)
+    {
+        // Loop through each starting position of our 4-digit "window"
+        for (i = 0; i < 7; i++)
+        {
+            // Load the 4 patterns for the current frame into the buffer
+            display_buffer[0] = scroll_sequence[i];
+            display_buffer[1] = scroll_sequence[i + 1];
+            display_buffer[2] = scroll_sequence[i + 2];
+            display_buffer[3] = scroll_sequence[i + 3];
+
+           
+            // 25 cycles * (4 digits * 5ms) = 500ms
+            for (persistence_loop = 0; persistence_loop < 25; persistence_loop++)
+            {
+                
+                PORTC = ~0x04;
+                PORTA = display_buffer[2];
+                delay_ms(5);
+
+                PORTC = ~0x08;
+                PORTA = display_buffer[1];
+                delay_ms(5);
+
+                PORTC = ~0x16;
+                PORTA = display_buffer[0];
+                delay_ms(5);
+
+                PORTC = ~0x32;
+                PORTA = display_buffer[3];
+                delay_ms(5);
+            }
+        }
+    }
+}
