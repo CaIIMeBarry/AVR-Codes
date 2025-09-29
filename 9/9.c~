@@ -1,0 +1,18 @@
+#include <delay.h>
+#include <mega32.h>
+void main(void)
+{
+char number = 0x00;
+DDRA = 0x00;
+DDRB = 0xff;
+DDRC = 0xff;
+DDRD = 0xff;
+while (1)
+    {
+     number = PINA;
+     PORTB = number%10 ;
+     PORTC = (number/10)%10
+     PORTD = number/100;
+     delay_ms(500);
+    }
+}
