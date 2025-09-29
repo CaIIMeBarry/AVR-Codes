@@ -1,0 +1,123 @@
+#include <mega32.h>
+#include <delay.h>
+#include <alcd.h>
+#include <stdio.h>
+
+// Voltage Reference: Internal 2.56V, cap. on AREF
+#define ADC_VREF_TYPE ((1<<REFS1) | (1<<REFS0) | (0<<ADLAR))
+
+float adc_value;
+float temperature;
+char temp_str[16];
+char fan_str[16];
+
+unsigned int read_adc(unsigned char adc_input)
+{
+    ADMUX = adc_input | ADC_VREF_TYPE;
+    // Delay needed for the stabilization of the ADC input voltage
+    delay_us(10);
+    // Start the AD conversion
+    ADCSRA |= (1<<ADSC);
+    // Wait for the AD conversion to complete
+    while ((ADCSRA & (1<<ADIF)) == 0);
+    ADCSRA |= (1<<ADIF);
+    return ADCW;
+}
+
+void main(void)
+{
+    // Port A initialization - for LCD data lines
+    DDRA = 0xFF;  // All pins as output for LCD
+    PORTA = 0x00;
+
+    // Port B initialization
+    // Bit7=Out (Fan control), other bits as needed
+    DDRB = (1<<DDB7) | (0<<DDB6) | (0<<DDB5) | (0<<DDB4) | (0<<DDB3) | (0<<DDB2) | (0<<DDB1) | (0<<DDB0);
+    PORTB = (0<<PORTB7) | (0<<PORTB6) | (0<<PORTB5) | (0<<PORTB4) | (0<<PORTB3) | (0<<PORTB2) | (0<<PORTB1) | (0<<PORTB0);
+
+    // Port C initialization - for LCD control lines
+    DDRC = 0xFF;  // Configure as needed for LCD control
+    PORTC = 0x00;
+
+    // Port D initialization
+    DDRD = 0x00;  // All inputs
+    PORTD = 0x00;
+
+    // Timer/Counter 0 initialization (disabled)
+    TCCR0 = (0<<WGM00) | (0<<COM01) | (0<<COM00) | (0<<WGM01) | (0<<CS02) | (0<<CS01) | (0<<CS00);
+    TCNT0 = 0x00;
+    OCR0 = 0x00;
+
+    // Timer/Counter 1 initialization (disabled)
+    TCCR1A = (0<<COM1A1) | (0<<COM1A0) | (0<<COM1B1) | (0<<COM1B0) | (0<<WGM11) | (0<<WGM10);
+    TCCR1B = (0<<ICNC1) | (0<<ICES1) | (0<<WGM13) | (0<<WGM12) | (0<<CS12) | (0<<CS11) | (0<<CS10);
+    TCNT1H = 0x00;
+    TCNT1L = 0x00;
+    ICR1H = 0x00;
+    ICR1L = 0x00;
+    OCR1AH = 0x00;
+    OCR1AL = 0x00;
+    OCR1BH = 0x00;
+    OCR1BL = 0x00;
+
+    // Timer/Counter 2 initialization (disabled)
+    ASSR = 0<<AS2;
+    TCCR2 = (0<<PWM2) | (0<<COM21) | (0<<COM20) | (0<<CTC2) | (0<<CS22) | (0<<CS21) | (0<<CS20);
+    TCNT2 = 0x00;
+    OCR2 = 0x00;
+
+    // Timer(s)/Counter(s) Interrupt(s) initialization
+    TIMSK = (0<<OCIE2) | (0<<TOIE2) | (0<<TICIE1) | (0<<OCIE1A) | (0<<OCIE1B) | (0<<TOIE1) | (0<<OCIE0) | (0<<TOIE0);
+
+    // External Interrupt(s) initialization
+    MCUCR = (0<<ISC11) | (0<<ISC10) | (0<<ISC01) | (0<<ISC00);
+    MCUCSR = (0<<ISC2);
+
+    // USART initialization (disabled)
+    UCSRB = (0<<RXCIE) | (0<<TXCIE) | (0<<UDRIE) | (0<<RXEN) | (0<<TXEN) | (0<<UCSZ2) | (0<<RXB8) | (0<<TXB8);
+
+    // Analog Comparator initialization (disabled)
+    ACSR = (1<<ACD) | (0<<ACBG) | (0<<ACO) | (0<<ACI) | (0<<ACIE) | (0<<ACIC) | (0<<ACIS1) | (0<<ACIS0);
+
+    // ADC initialization
+    // ADC Clock frequency: 1000.000 kHz
+    // ADC Voltage Reference: Int., cap. on AREF
+    ADMUX = ADC_VREF_TYPE;
+    ADCSRA = (1<<ADEN) | (0<<ADSC) | (0<<ADATE) | (0<<ADIF) | (0<<ADIE) | (0<<ADPS2) | (1<<ADPS1) | (1<<ADPS0);
+    SFIOR = (0<<ADTS2) | (0<<ADTS1) | (0<<ADTS0);
+
+    // SPI initialization (disabled)
+    SPCR = (0<<SPIE) | (0<<SPE) | (0<<DORD) | (0<<MSTR) | (0<<CPOL) | (0<<CPHA) | (0<<SPR1) | (0<<SPR0);
+
+    // TWI initialization (disabled)
+    TWCR = (0<<TWEA) | (0<<TWSTA) | (0<<TWSTO) | (0<<TWEN) | (0<<TWIE);
+
+
+    lcd_init(16);
+
+    while (1)
+    {
+
+        adc_value = read_adc(3);
+        temperature = (float)adc_value / 4.0;
+
+        // Format temperature string with proper clearing
+        sprintf(temp_str, "Temp: %4.2f C   ", temperature);
+
+
+        if (temperature >= 30.0) {
+            PORTB.7=1;
+            sprintf(fan_str, "Fan: ON   ");
+        } else {
+            PORTB.7=0;
+            sprintf(fan_str, "Fan: OFF  ");
+        }
+
+        lcd_gotoxy(0, 0);
+        lcd_puts(temp_str);
+        lcd_gotoxy(0, 1);
+        lcd_puts(fan_str);
+
+        delay_ms(100);
+    }
+}
