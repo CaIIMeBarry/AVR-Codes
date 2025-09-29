@@ -1,0 +1,151 @@
+#include <mega32.h>
+#include <delay.h>
+#include <alcd.h> // Make sure to include the LCD library
+
+// Function to get the pressed key from the 4x4 keypad
+char get_keypad_key()
+{
+    unsigned char row, col;
+    // The keypad is connected to PORTC. We will scan it.
+    for(row = 0; row < 4; row++)
+    {
+        // Set all PORTC pins to input with pull-ups initially
+        DDRC = 0x00;
+        PORTC = 0xFF;
+
+        // Set the current row pin to output low
+        // Rows are PC0, PC1, PC2, PC3
+        DDRC |= (1 << row);
+        PORTC &= ~(1 << row);
+
+        delay_us(100); // Small delay for signal to settle
+
+        // Read the columns (PC4 to PC7)
+        col = (PINC & 0xF0);
+
+        if (col != 0xF0) // A column has been pulled low
+        {
+            // A key is pressed, debounce and confirm
+            delay_ms(20);
+            col = (PINC & 0xF0);
+            if (col != 0xF0)
+            {
+                 // Wait for key release. The row is still being driven low,
+                 // so this will now correctly wait until the button is let go.
+                 while((PINC & 0xF0) != 0xF0);
+
+                 switch(row)
+                 {
+                     case 0: // Top row (Schematic Row 'A')
+                         if (col == 0xE0) return '7'; // 0b11100000
+                         if (col == 0xD0) return '8'; // 0b11010000
+                         if (col == 0xB0) return '9'; // 0b10110000
+                         break;
+                     case 1: // Second row (Schematic Row 'B')
+                         if (col == 0xE0) return '4';
+                         if (col == 0xD0) return '5';
+                         if (col == 0xB0) return '6';
+                         break;
+                     case 2: // Third row (Schematic Row 'C')
+                         if (col == 0xE0) return '1';
+                         if (col == 0xD0) return '2';
+                         if (col == 0xB0) return '3';
+                         break;
+                     case 3: // Bottom row (Schematic Row 'D')
+                         if (col == 0xD0) return '0';
+                         break;
+                 }
+            }
+        }
+    }
+    return 0; // No valid key pressed
+}
+
+// Timer2 Compare Match Interrupt Service Routine
+// This ISR is called every time TCNT2 matches OCR2
+interrupt [TIM2_COMP] void timer2_comp_isr(void)
+{
+    // Toggle the buzzer pin on PB7 to create a square wave
+    PORTB.7 = !PORTB.7;
+}
+
+void main(void)
+{
+    char key;
+    unsigned int ocr_value;
+
+
+    // Port B initialization
+    // Set PB7 as output for the buzzer.
+    DDRB = (1 << DDB7);
+    PORTB = 0x00; // Buzzer off initially
+
+    // Port C initialization for Keypad
+    DDRC = 0x00;
+    PORTC = 0xFF; // All pins input with pull-ups
+
+    // Timer/Counter 2 initialization
+    // Mode: CTC top=OCR2
+    // We use an interrupt to toggle PB7, so OC2 pin is disconnected.
+    ASSR = 0 << AS2;
+    // WGM21=1 for CTC mode, CS22=1 for prescaler of 64
+    TCCR2 = (1 << WGM21) | (1 << CS22);
+    TCNT2 = 0x00;
+    OCR2 = 0x00;
+
+    // Timer(s)/Counter(s) Interrupt(s) initialization
+    TIMSK = (0 << OCIE2); // Interrupt is disabled initially
+
+    // Alphanumeric LCD initialization
+    // Connections should be configured in your IDE (Project->Configure)
+    // to match your schematic (PORTA).
+    // Characters/line: 16
+    lcd_init(16);
+    lcd_clear(); // Clear display at startup
+
+    // Global enable interrupts
+    #asm("sei")
+
+    while (1)
+    {
+        key = get_keypad_key();
+
+        if (key >= '0' && key <= '9')
+        {
+            // A numeric key was pressed
+            lcd_gotoxy(0,1);
+            lcd_putsf("                "); // Clear the second line
+            lcd_gotoxy(0,1);
+            lcd_putsf("Key: ");
+            lcd_putchar(key);
+
+            // OCR values calculated for 1MHz clock and /64 prescaler
+            switch(key) {
+                case '0': ocr_value = 30; break; // C4
+                case '1': ocr_value = 26; break; // D4
+                case '2': ocr_value = 23; break; // E4
+                case '3': ocr_value = 22; break; // F4
+                case '4': ocr_value = 19; break; // G4
+                case '5': ocr_value = 17; break; // A4
+                case '6': ocr_value = 15; break; // B4
+                case '7': ocr_value = 14; break; // C5
+                case '8': ocr_value = 12; break; // D5
+                case '9': ocr_value = 11; break; // E5
+            }
+
+            // Set the compare value for the timer
+            OCR2 = (unsigned char)ocr_value;
+
+            // Enable Timer2 Compare Match Interrupt to start the sound
+            TIMSK |= (1 << OCIE2);
+
+            // Play the tone for 200ms
+            delay_ms(200);
+
+            // Disable the interrupt and turn the buzzer off
+            TIMSK &= ~(1 << OCIE2);
+            PORTB.7 = 0;
+        }
+    }
+}
+
