@@ -1,0 +1,6 @@
+a= read_adc(3);
+      sprintf(t,"%04d",a);
+      lcd_gotoxy(0,0);
+      lcd_puts(t);
+      delay_ms(100);
+/////////////////////////
