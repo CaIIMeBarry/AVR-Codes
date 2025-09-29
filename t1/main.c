@@ -1,0 +1,105 @@
+#include <mega32.h>
+#include <i2c.h>
+#include <alcd.h>
+#include <delay.h>
+#include <stdio.h>
+
+
+#define COUNTER_EEPROM_ADDR 0
+
+void memw(unsigned int add, unsigned char data)
+{
+    unsigned char addh, addl;
+    addh = add >> 8;
+    addl = add;
+    i2c_start();
+    i2c_write(0xa0);
+    i2c_write(addh);
+    i2c_write(addl);
+    i2c_write(data);
+    i2c_stop();
+    delay_ms(10);
+}
+
+
+unsigned char memr(unsigned int add)
+{
+    unsigned char addh, addl;
+    unsigned char data;
+    addh = add >> 8;
+    addl = add;
+    i2c_start();
+    i2c_write(0xa0);
+    i2c_write(addh);
+    i2c_write(addl);
+    delay_ms(5);
+    i2c_start();
+    i2c_write(0xa1);
+    data = i2c_read(0);
+    i2c_stop();
+    delay_ms(5);
+    return data;
+}
+
+void main(void)
+{
+
+    unsigned char counter;
+    //forcing the first LCD update
+    int old_counter = -1;
+    char lcd_buffer[17];
+    i2c_init();
+    lcd_init(16);
+    counter = memr(COUNTER_EEPROM_ADDR);
+
+    if (counter > 100)
+    {
+        counter = 0; // Default
+    }
+
+    lcd_clear();
+    lcd_puts("Volume: ");
+    delay_ms(1500);
+
+    while (1)
+    {
+
+        if (PINB.5 == 0)
+        {
+
+            while (PINB.5 == 0);
+
+            if (counter < 100)
+            {
+                counter++;
+                memw(COUNTER_EEPROM_ADDR, counter);
+            }
+        }
+
+
+        if (PINB.7 == 0)
+        {
+
+            while (PINB.7 == 0);
+
+            if (counter > 0)
+            {
+                counter--;
+                memw(COUNTER_EEPROM_ADDR, counter);
+            }
+        }
+
+        if (counter != old_counter)
+        {
+            sprintf(lcd_buffer, "Volume: %d   ", counter);
+
+            lcd_clear();
+            lcd_gotoxy(0, 0);
+            lcd_puts(lcd_buffer);
+            old_counter = counter;
+        }
+
+        delay_ms(20);
+    }
+}
+
