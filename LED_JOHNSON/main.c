@@ -1,0 +1,23 @@
+#include <mega32.h>
+#include <delay.h>
+
+void main() 
+{
+        unsigned char state = 0; 
+        char i;
+    DDRA = 0xFF; 
+
+    while (1) 
+    {
+        for ( i = 0; i < 16; i++) 
+        {
+            if (i < 8) {
+                state = (state << 1) | 0x01; // Shift right and set MSB to 1
+            } else {
+                state = (state << 1); // Shift right without setting MSB
+            }
+            PORTA = state; 
+            delay_ms(500); 
+        }
+    }
+}

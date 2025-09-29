@@ -1,0 +1,26 @@
+#include <mega32.h>
+#include <delay.h>
+
+void main() 
+{
+    int i; 
+    DDRC = 0xFF;
+    DDRA = 0xFF; 
+    while (1) 
+    {
+        for ( i = 0; i < 8; i++) 
+        {
+            PORTA = (1 << i)^PORTA; 
+            delay_ms(50);  
+            
+        } 
+          
+        for (i=2 ; i<8 ; i++)  
+        {
+            PORTC = (1<<i)^PORTC;   
+            delay_ms(50); 
+            
+        }  
+
+    }
+}
