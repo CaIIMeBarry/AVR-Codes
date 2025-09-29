@@ -1,0 +1,67 @@
+#include <mega32.h>
+#include <delay.h>
+#include <alcd.h>
+#include <stdio.h>
+
+void main(void)
+{
+    // Set the target time here (minutes and seconds)
+    int target_minutes = 0;
+    int target_seconds = 8;
+    int target_total_seconds = target_minutes * 60 + target_seconds;
+    int current_minutes = 0;
+    int current_seconds = 0;
+    int current_total_seconds = 0;
+    char line1[17];
+    char line2[17];
+    int buzzer_active = 0;
+    int buzzer_counter = 0;
+    lcd_init(16);
+    DDRA |= (1 << 3);  // bit or
+    lcd_clear();
+    while (1)
+    {
+        if (!buzzer_active)
+        {
+            // Normal timer operation - counting up from 00:00
+            sprintf(line1, " %02d:%02d ", current_minutes, current_seconds);
+            sprintf(line2, "  %02d:%02d  ", target_minutes, target_seconds);
+            lcd_gotoxy(5, 0);
+            lcd_puts(line1);
+            lcd_gotoxy(4, 1);
+            lcd_puts(line2);
+            delay_ms(100);
+            current_seconds++;
+
+            if (current_seconds >= 60)
+            {
+                current_seconds = 0;
+                current_minutes++;
+            }
+            current_total_seconds = current_minutes * 60 + current_seconds;
+
+            if (current_total_seconds == target_total_seconds)
+            {
+                buzzer_active = 1;
+                buzzer_counter = 0;
+                PORTA |= (1 << 3);
+            }
+        }
+        else
+        {
+            // Buzzer is active for
+            delay_ms(100);
+            buzzer_counter++;
+
+            if (buzzer_counter >= 10)
+            {
+                PORTA &= ~(1 << 3); // Turn off buzzer
+                buzzer_active = 0;
+                buzzer_counter = 0;
+                current_minutes = 0;
+                current_seconds = 0;
+                current_total_seconds = 0;
+            }
+        }
+    }
+}

@@ -1,0 +1,31 @@
+#include <mega32.h>
+#include <delay.h>
+#include <alcd.h>
+
+void main(void)
+{
+    char full_text[] = "Hey, my name is bardia, and i am 24 years old. happy to see you!!     ";
+
+    // A buffer to hold the 16 characters that will be visible on the LCD at any moment.
+    char display[17];
+    int text_len = 70;// totall chars
+    int i, j;
+    lcd_init(16);
+    while (1)
+    {
+        // This outer loop shifts the starting point of the text.
+        for (i = 0; i < text_len; i++)
+        {
+            //builds string to be displayed.
+            for (j = 0; j < 16; j++)
+            {
+                display[j] = full_text[(i + j) % text_len];
+            }
+
+            //display[16] = '\0';
+            lcd_gotoxy(0, 0);
+            lcd_puts(display);
+            delay_ms(250);
+        }
+    }
+}
