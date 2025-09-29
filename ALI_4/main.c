@@ -1,0 +1,39 @@
+#include <mega32.h>
+#include <delay.h>
+unsigned char d[]={0x77,0x38,0x30,0x00,0x77,0x38,0x30,0x00};
+unsigned char k,j;
+void main(void)
+{
+ DDRA=0xff;
+ DDRC=0x3c;//0b00111100
+ PORTC=0x00;
+while (1)
+    {
+      for(j=0;j<4;j++)
+      {
+       for(k=0;k<20;k++)
+       {
+       //-------Digit 1 -------------
+       PORTA=d[0+j];
+       PORTC.2=1;
+       delay_ms(5);
+       PORTC.2=0;
+       //-------Digit 2 -------------
+       PORTA=d[1+j];
+       PORTC.3=1;
+       delay_ms(5);
+       PORTC.3=0;
+       //-------Digit 3 -------------
+       PORTA=d[2+j];
+       PORTC.4=1;
+       delay_ms(5);
+       PORTC.4=0;
+       //-------Digit 4 -------------
+       PORTA=d[3+j];
+       PORTC.5=1;
+       delay_ms(5);
+       PORTC.5=0;
+       } 
+       }
+    }
+}
