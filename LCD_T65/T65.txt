@@ -1,0 +1,48 @@
+while (1)
+      {
+       for(x=0;x<=12;x++)
+       {
+        lcd_clear();
+        lcd_gotoxy(x,0);
+        lcd_putsf("IRAN");
+        lcd_gotoxy(12-x,1);
+        lcd_putsf("1404");
+        delay_ms(200);
+       }
+       for(x=12;x>=0;x--)
+       {
+        lcd_clear();
+        lcd_gotoxy(x,0);
+        lcd_putsf("IRAN");
+        lcd_gotoxy(12-x,1);
+        lcd_putsf("1404");
+        delay_ms(200);
+       }
+      }
+/////////////////////////////////////////
+while (1)
+      {
+       for(j=0;j<115;j++)
+       {
+       for(i=0;i<16;i++)
+       {
+        t[i]=s[i+j];
+       }
+       lcd_gotoxy(0,0);
+       lcd_puts(t);
+       delay_ms(100);
+       }
+      }
+      /////////////////////////////
+      while (1)
+      { 
+       for(i=0;i<20;i++)
+       {
+        sprintf(t,"%02d%% \"R\" ",i);
+        lcd_gotoxy(7,0); 
+        lcd_puts(t);
+        delay_ms(500);
+       }
+      }
+      ////////////////////////////////////
+            
