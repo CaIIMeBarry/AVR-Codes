@@ -1,0 +1,66 @@
+#include <mega32.h>
+#include <delay.h>
+
+unsigned char ali_pattern[] = {0x77, 0x38, 0x30}; // A, L, I
+signed char scroll_position = 0;// first position
+signed char direction = 0;//default first move 0=stop,1=r,-1=l
+unsigned int scroll_counter = 0;
+
+
+void main(void)
+{
+    DDRA = 0xFF;
+    DDRB = 0xFF;
+    DDRC = 0x00;
+    PORTC = 0x07;
+
+    while (1)
+    {       unsigned char digit;
+            unsigned char pos_A = ((scroll_position + 0) % 8 + 8) % 8;
+            unsigned char pos_L = ((scroll_position + 1) % 8 + 8) % 8;
+            unsigned char pos_I = ((scroll_position + 2) % 8 + 8) % 8;
+        //  Check Button States
+        if ((PINC & 0x01) == 0) direction = 1;
+        if ((PINC & 0x02) == 0) direction = -1;
+        if ((PINC & 0x04) == 0) direction = 0;
+
+        // --- Part 2: Multiplex the 8-Digit Display
+
+        for (digit = 0; digit < 8; digit++)
+        {
+            unsigned char pattern_to_show = 0x00; // Default to a blank digit
+
+            PORTB = 0xFF; //prevent "ghosting"
+
+
+            if (digit == pos_A)
+            {
+                pattern_to_show = ali_pattern[0]; // Place 'A'
+            }
+            if (digit == pos_L)
+            {
+                pattern_to_show = ali_pattern[1]; // Place 'L'
+            }
+            if (digit == pos_I)
+            {
+                pattern_to_show = ali_pattern[2]; // Place 'I'
+            }
+
+            PORTA = pattern_to_show;
+            PORTB = ~(1 << digit);
+            delay_ms(1);
+        }
+
+
+        //Update Scroll Position/ Speed
+        scroll_counter++;
+        if (scroll_counter > 30)
+        {
+            scroll_counter = 0;
+            if (direction != 0)
+            {
+                scroll_position = scroll_position + direction;
+            }
+        }
+    }
+}
