@@ -32,7 +32,7 @@ DDR1=0
 PORT1=0
 DDR2=0
 PORT2=0
-DDR3=0
+DDR3=128
 PORT3=0
 DDR4=0
 PORT4=0
@@ -417,7 +417,7 @@ PCF8583Enabled=0
 PCF8583Address0=0
 PCF8583Address1=0
 DS1307Enabled=1
-DS1307SQWE=0
+DS1307SQWE=1
 DS1307Out=0
 DS1307Frequency=0
 [1Wire]
@@ -513,7 +513,7 @@ DS1302ChargeResistor=0
 [ProjectInformation]
 ProjectName=
 ProjectVersion=
-ProjectDate=9/2/2025
+ProjectDate=8/29/2025
 ProjectAuthor=
 ProjectCompany=
 CommentLines=0
