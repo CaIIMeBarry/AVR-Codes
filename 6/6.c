@@ -1,0 +1,51 @@
+#include <delay.h>
+#include <mega32.h>
+
+void main(void)
+{
+    char s = 0;    // Seconds
+    char m = 0;    // Minutes
+    char h = 0;    // Hours
+    char y_1, d_1; // Units and tens for seconds
+    char y_2, d_2; // Units and tens for minutes
+    char y_3, d_3; // Units and tens for hours
+
+
+    DDRB = 0xFF;
+    DDRA = 0xFF;
+    DDRC = 0xFF;
+
+    while (1)
+    {
+
+        s++;
+        if (s >= 60)
+        {
+            s = 0;
+            m++;
+            if (m >= 60)
+            {
+                m = 0;
+                h++;
+                if (h >= 24)
+                {
+                    h = 0;
+                }
+            }
+        }
+
+        d_1 = s / 10;  // Tens of seconds
+        y_1 = s % 10;  // Units of seconds
+        d_2 = m / 10;  // Tens of minutes
+        y_2 = m % 10;  // Units of minutes
+        d_3 = h / 10;
+        y_3 = h % 10;
+
+        // Set ports for display
+        PORTA = (d_1 << 4) | y_1; // Seconds
+        PORTB = (d_2 << 4) | y_2; // Minutes
+        PORTC = (d_3 << 4) | y_3; // Hours
+
+        delay_ms(12);
+    }
+}

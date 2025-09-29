@@ -1,0 +1,46 @@
+#include <delay.h>
+#include <mega32.h>
+
+void main(void)
+{   int i=0;
+    char s=0;
+    char y_1=0;
+    char d_1=0;
+    char y_2=0;
+    char d_2=0;
+    char y_3=0;
+    char d_3=0;
+
+    char m=0;
+    char h=0;
+    DDRB = 0xFF;
+    DDRA = 0xFF;
+    DDRC = 0xFF;
+    while (1)
+     {
+       h=i/3600;
+       i=i%3600;
+       m=i/60;
+       s=i%60;
+       h=i/10;
+       ///////////
+       d_1 = s/10;
+       y_1 =  s%10;
+       ///////////
+       d_2 = m/10;
+       y_2 = m%10;
+       ////////////
+       d_3 = h/10;
+       y_3 =  h%10;
+       ////////////
+
+       PORTA = (d_1 << 4) | y_1;
+
+       PORTB = (d_2 << 4) | y_2;
+
+       PORTC = (d_3 << 4) | y_3;
+
+       delay_ms(150);
+       i++;
+    }
+}

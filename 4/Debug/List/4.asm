@@ -1113,9 +1113,6 @@ __START_OF_CODE:
 	JMP  0x00
 	JMP  0x00
 
-_0x3:
-	.DB  0xFF,0xFF,0xFF,0x88,0xC7,0xF9,0xFF,0xFF
-	.DB  0xFF,0xFF
 __RESET:
 	CLI
 	CLR  R30
@@ -1165,6 +1162,7 @@ __CLEAR_SRAM:
 	.ORG 0x260
 
 	.CSEG
+;#include <delay.h>
 ;#include <mega32.h>
 	#ifndef __SLEEP_DEFINED__
 	#define __SLEEP_DEFINED__
@@ -1177,150 +1175,97 @@ __CLEAR_SRAM:
 	.EQU __sm_adc_noise_red=0x10
 	.SET power_ctrl_reg=mcucr
 	#endif
-;#include <delay.h>
 ;
-;void main(void)
-; 0000 0005 {
+;void main(void) {
+; 0000 0004 void main(void) {
 
 	.CSEG
 _main:
 ; .FSTART _main
-; 0000 0006     const unsigned char scroll_sequence[] = {
-; 0000 0007         ~0x00, ~0x00, ~0x00,  // BLANK, BLANK, BLANK
-; 0000 0008         ~0x77,                // A
-; 0000 0009         ~0x38,                // L
-; 0000 000A         ~0x06,                // I
-; 0000 000B         ~0x00, ~0x00, ~0x00, ~0x00 // Trailing BLANKs
-; 0000 000C     };
-; 0000 000D 
-; 0000 000E     unsigned char i;
-; 0000 000F     unsigned char persistence_loop;
-; 0000 0010     unsigned char display_buffer[4];
-; 0000 0011 
-; 0000 0012     DDRA = 0xFF;
-	SBIW R28,14
-	LDI  R24,10
-	LDI  R26,LOW(4)
-	LDI  R27,HIGH(4)
-	LDI  R30,LOW(_0x3*2)
-	LDI  R31,HIGH(_0x3*2)
-	CALL __INITLOCB
-;	scroll_sequence -> Y+4
-;	i -> R17
-;	persistence_loop -> R16
-;	display_buffer -> Y+0
+; 0000 0005     int count = 0;
+; 0000 0006     char d,y,s,h;
+; 0000 0007     DDRB = 0xFF;
+;	count -> R16,R17
+;	d -> R19
+;	y -> R18
+;	s -> R21
+;	h -> R20
+	__GETWRN 16,17,0
 	LDI  R30,LOW(255)
+	OUT  0x17,R30
+; 0000 0008     DDRA = 0xFF;
 	OUT  0x1A,R30
-; 0000 0013     DDRC = 0xFF;
-	OUT  0x14,R30
+; 0000 0009     while (1) {
+_0x3:
+; 0000 000A 
+; 0000 000B         h =  count / 1000;
+	MOVW R26,R16
+	LDI  R30,LOW(1000)
+	LDI  R31,HIGH(1000)
+	CALL __DIVW21
+	MOV  R20,R30
+; 0000 000C         s = (count%1000)/100;
+	MOVW R26,R16
+	LDI  R30,LOW(1000)
+	LDI  R31,HIGH(1000)
+	CALL __MODW21
+	MOVW R26,R30
+	LDI  R30,LOW(100)
+	LDI  R31,HIGH(100)
+	CALL __DIVW21
+	MOV  R21,R30
+; 0000 000D         d = (count%100)/10;
+	MOVW R26,R16
+	LDI  R30,LOW(100)
+	LDI  R31,HIGH(100)
+	CALL __MODW21
+	MOVW R26,R30
+	LDI  R30,LOW(10)
+	LDI  R31,HIGH(10)
+	CALL __DIVW21
+	MOV  R19,R30
+; 0000 000E         y =  count%10;
+	MOVW R26,R16
+	LDI  R30,LOW(10)
+	LDI  R31,HIGH(10)
+	CALL __MODW21
+	MOV  R18,R30
+; 0000 000F 
+; 0000 0010         PORTA = (d << 4) | y;
+	MOV  R30,R19
+	SWAP R30
+	ANDI R30,0xF0
+	OR   R30,R18
+	OUT  0x1B,R30
+; 0000 0011         PORTB = (h << 4) | s;
+	MOV  R30,R20
+	SWAP R30
+	ANDI R30,0xF0
+	OR   R30,R21
+	OUT  0x18,R30
+; 0000 0012 
+; 0000 0013         delay_ms(10);
+	LDI  R26,LOW(10)
+	LDI  R27,0
+	CALL _delay_ms
 ; 0000 0014 
-; 0000 0015     while (1)
-_0x4:
-; 0000 0016     {
-; 0000 0017         // Loop through each starting position of our 4-digit "window"
-; 0000 0018         for (i = 0; i < 7; i++)
-	LDI  R17,LOW(0)
-_0x8:
-	CPI  R17,7
-	BRSH _0x9
-; 0000 0019         {
-; 0000 001A             // Load the 4 patterns for the current frame into the buffer
-; 0000 001B             display_buffer[0] = scroll_sequence[i];
-	MOV  R30,R17
-	LDI  R31,0
-	RCALL SUBOPT_0x0
-	ST   Y,R30
-; 0000 001C             display_buffer[1] = scroll_sequence[i + 1];
-	MOV  R30,R17
-	LDI  R31,0
-	ADIW R30,1
-	RCALL SUBOPT_0x0
-	STD  Y+1,R30
-; 0000 001D             display_buffer[2] = scroll_sequence[i + 2];
-	MOV  R30,R17
-	LDI  R31,0
-	ADIW R30,2
-	RCALL SUBOPT_0x0
-	STD  Y+2,R30
-; 0000 001E             display_buffer[3] = scroll_sequence[i + 3];
-	MOV  R30,R17
-	LDI  R31,0
-	ADIW R30,3
-	RCALL SUBOPT_0x0
-	STD  Y+3,R30
-; 0000 001F 
-; 0000 0020 
-; 0000 0021             // 25 cycles * (4 digits * 5ms) = 500ms
-; 0000 0022             for (persistence_loop = 0; persistence_loop < 25; persistence_loop++)
-	LDI  R16,LOW(0)
-_0xB:
-	CPI  R16,25
-	BRSH _0xC
-; 0000 0023             {
-; 0000 0024 
-; 0000 0025                 PORTC = ~0x04;
-	LDI  R30,LOW(251)
-	OUT  0x15,R30
-; 0000 0026                 PORTA = display_buffer[2];
-	LDD  R30,Y+2
-	RCALL SUBOPT_0x1
-; 0000 0027                 delay_ms(5);
-; 0000 0028 
-; 0000 0029                 PORTC = ~0x08;
-	LDI  R30,LOW(247)
-	OUT  0x15,R30
-; 0000 002A                 PORTA = display_buffer[1];
-	LDD  R30,Y+1
-	RCALL SUBOPT_0x1
-; 0000 002B                 delay_ms(5);
-; 0000 002C 
-; 0000 002D                 PORTC = ~0x16;
-	LDI  R30,LOW(233)
-	OUT  0x15,R30
-; 0000 002E                 PORTA = display_buffer[0];
-	LD   R30,Y
-	RCALL SUBOPT_0x1
-; 0000 002F                 delay_ms(5);
-; 0000 0030 
-; 0000 0031                 PORTC = ~0x32;
-	LDI  R30,LOW(205)
-	OUT  0x15,R30
-; 0000 0032                 PORTA = display_buffer[3];
-	LDD  R30,Y+3
-	RCALL SUBOPT_0x1
-; 0000 0033                 delay_ms(5);
-; 0000 0034             }
-	SUBI R16,-1
-	RJMP _0xB
-_0xC:
-; 0000 0035         }
-	SUBI R17,-1
-	RJMP _0x8
-_0x9:
-; 0000 0036     }
-	RJMP _0x4
-; 0000 0037 }
-_0xD:
-	RJMP _0xD
+; 0000 0015         count++;
+	__ADDWRN 16,17,1
+; 0000 0016         if (count > 9999) {
+	__CPWRN 16,17,10000
+	BRLT _0x6
+; 0000 0017             count = 0;
+	__GETWRN 16,17,0
+; 0000 0018         }
+; 0000 0019     }
+_0x6:
+	RJMP _0x3
+; 0000 001A }
+_0x7:
+	RJMP _0x7
 ; .FEND
 
 	.CSEG
-;OPTIMIZER ADDED SUBROUTINE, CALLED 4 TIMES, CODE SIZE REDUCTION:6 WORDS
-SUBOPT_0x0:
-	MOVW R26,R28
-	ADIW R26,4
-	ADD  R26,R30
-	ADC  R27,R31
-	LD   R30,X
-	RET
-
-;OPTIMIZER ADDED SUBROUTINE, CALLED 4 TIMES, CODE SIZE REDUCTION:6 WORDS
-SUBOPT_0x1:
-	OUT  0x1B,R30
-	LDI  R26,LOW(5)
-	LDI  R27,0
-	JMP  _delay_ms
-
 
 	.CSEG
 _delay_ms:
@@ -1334,15 +1279,78 @@ __delay_ms0:
 __delay_ms1:
 	ret
 
-__INITLOCB:
-__INITLOCW:
-	ADD  R26,R28
-	ADC  R27,R29
-__INITLOC0:
-	LPM  R0,Z+
-	ST   X+,R0
-	DEC  R24
-	BRNE __INITLOC0
+__ANEGW1:
+	NEG  R31
+	NEG  R30
+	SBCI R31,0
+	RET
+
+__DIVW21U:
+	CLR  R0
+	CLR  R1
+	LDI  R25,16
+__DIVW21U1:
+	LSL  R26
+	ROL  R27
+	ROL  R0
+	ROL  R1
+	SUB  R0,R30
+	SBC  R1,R31
+	BRCC __DIVW21U2
+	ADD  R0,R30
+	ADC  R1,R31
+	RJMP __DIVW21U3
+__DIVW21U2:
+	SBR  R26,1
+__DIVW21U3:
+	DEC  R25
+	BRNE __DIVW21U1
+	MOVW R30,R26
+	MOVW R26,R0
+	RET
+
+__DIVW21:
+	RCALL __CHKSIGNW
+	RCALL __DIVW21U
+	BRTC __DIVW211
+	RCALL __ANEGW1
+__DIVW211:
+	RET
+
+__MODW21:
+	CLT
+	SBRS R27,7
+	RJMP __MODW211
+	COM  R26
+	COM  R27
+	ADIW R26,1
+	SET
+__MODW211:
+	SBRC R31,7
+	RCALL __ANEGW1
+	RCALL __DIVW21U
+	MOVW R30,R26
+	BRTC __MODW212
+	RCALL __ANEGW1
+__MODW212:
+	RET
+
+__CHKSIGNW:
+	CLT
+	SBRS R31,7
+	RJMP __CHKSW1
+	RCALL __ANEGW1
+	SET
+__CHKSW1:
+	SBRS R27,7
+	RJMP __CHKSW2
+	COM  R26
+	COM  R27
+	ADIW R26,1
+	BLD  R0,0
+	INC  R0
+	BST  R0,0
+__CHKSW2:
 	RET
 
 ;END OF CODE MARKER
