@@ -1,7 +1,92 @@
-while (1)
-      {
-        i++;
-        if(i==4) i=0;
-        PORTB=d[i];
-        delay_ms(500);
-      }
+#include <mega32.h>
+#include <delay.h>
+#include <alcd.h>
+#include <stdio.h>
+
+void main(void) {
+    // Step sequence for PORTB1-PORTB4
+    unsigned char step_seq[] = {0x02, 0x04, 0x08, 0x10};  //{0x04, 0x08, 0x10, 0x02}
+    signed char step_index = 0;
+    signed int current_position = 0;
+    signed int target_position = 0;
+    unsigned char motor_on = 0;
+    unsigned char direction = 0; // 0 = right, 1 = left
+    char buf[16];
+
+
+    DDRB = 0x1E;
+
+
+    lcd_init(16);
+
+    while(1) {
+        // ==== BUTTON HANDLING ====
+        if(PIND.0 == 0) { // Start
+            delay_ms(50);
+            while(PIND.0 == 0);
+            if(current_position != target_position) {
+                motor_on = 1;
+            }
+        }
+
+        if(PIND.1 == 0) { // Increment
+            delay_ms(50);
+            while(PIND.1 == 0);
+            target_position += 6;
+        }
+
+        if(PIND.2 == 0) { // Decrement
+            delay_ms(50);
+            while(PIND.2 == 0);
+            target_position -= 6;
+        }
+
+        if(PIND.3 == 0) { // Toggle direction
+            delay_ms(50);
+            while(PIND.3 == 0);
+            direction = !direction;
+        }
+
+        // ==== LCD UPDATE ====
+        lcd_gotoxy(0,0);
+        lcd_putsf("s:");
+        if(motor_on) lcd_putsf("on ");
+        else lcd_putsf("off");
+        lcd_putsf(" d:");
+        if(direction) lcd_putsf("left ");
+        else lcd_putsf("right");
+
+        lcd_gotoxy(0,1);
+        sprintf(buf, "cur:%d tgt:%d", current_position, target_position);
+        lcd_puts(buf);
+        lcd_putsf("   ");
+
+        // ==== MOTOR CONTROL ====
+         if (motor_on) {
+            if (direction == 0) { // Right
+                if ((target_position - current_position) >= 6) {
+                    PORTB = step_seq[step_index];
+                    step_index = (step_index + 1) % 4;
+                    current_position += 6;
+                    delay_ms(200);
+                } else {
+                    motor_on = 0; // Stop
+                }
+            }
+            else { // Left
+                if ((current_position - target_position) >= 6) {
+                    PORTB = step_seq[step_index];
+                    step_index = (step_index - 1 + 4) % 4;
+                    current_position -= 6;
+                    delay_ms(200);
+                } else {
+                    motor_on = 0; // Stop
+                }
+            }
+        }
+        else {
+            // Motor off - clear step pins
+            PORTB &= 0xE1;
+        }
+    }
+}
