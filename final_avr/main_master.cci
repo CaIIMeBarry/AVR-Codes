@@ -1,0 +1,7 @@
+VERSION:3 SOURCE_TIMESTAMP:5B3A498D
+NODE:I LEVEL:0 LINE:24 "C:\cvavr\inc\mega32.h"
+NODE:I LEVEL:0 LINE:26 "C:\cvavr\inc\delay.h"
+NODE:I LEVEL:0 LINE:31 "C:\cvavr\inc\stdio.h"
+NODE:M LEVEL:0 LINE:34 "ADC_VREF_TYPE"
+NODE:F LEVEL:0 LINE:38 "read_adc(unsigned char adc_input)"
+NODE:F LEVEL:0 LINE:53 "main(void)"
