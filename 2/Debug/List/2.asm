@@ -1113,9 +1113,6 @@ __START_OF_CODE:
 	JMP  0x00
 	JMP  0x00
 
-_0x3:
-	.DB  0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xF8
-	.DB  0x80,0x90
 __RESET:
 	CLI
 	CLR  R30
@@ -1165,6 +1162,7 @@ __CLEAR_SRAM:
 	.ORG 0x260
 
 	.CSEG
+;#include <delay.h>
 ;#include <mega32.h>
 	#ifndef __SLEEP_DEFINED__
 	#define __SLEEP_DEFINED__
@@ -1177,156 +1175,86 @@ __CLEAR_SRAM:
 	.EQU __sm_adc_noise_red=0x10
 	.SET power_ctrl_reg=mcucr
 	#endif
-;#include <delay.h>
-;
 ;void main(void)
-; 0000 0005 {
+; 0000 0004 {
 
 	.CSEG
 _main:
 ; .FSTART _main
-; 0000 0006     unsigned char i;
-; 0000 0007     unsigned char persistence_loop;
-; 0000 0008     unsigned char digits[4];
-; 0000 0009     unsigned char segment_map[10] = {~0x3F, ~0x06, ~0x5B, ~0x4F, ~0x66, ~0x6D, ~0x7D, ~0x07, ~0x7F, ~0x6F};
-; 0000 000A 
-; 0000 000B     DDRA = 0xFF;
-	SBIW R28,14
-	LDI  R24,10
-	LDI  R26,LOW(0)
-	LDI  R27,HIGH(0)
-	LDI  R30,LOW(_0x3*2)
-	LDI  R31,HIGH(_0x3*2)
-	CALL __INITLOCB
-;	i -> R17
-;	persistence_loop -> R16
-;	digits -> Y+10
-;	segment_map -> Y+0
+; 0000 0005 char y=0;
+; 0000 0006 char d=0;
+; 0000 0007 char s=0;
+; 0000 0008 
+; 0000 0009 DDRB = 0xff;
+;	y -> R17
+;	d -> R16
+;	s -> R19
+	LDI  R17,0
+	LDI  R16,0
+	LDI  R19,0
 	LDI  R30,LOW(255)
-	OUT  0x1A,R30
-; 0000 000C     DDRB = 0xFF;
 	OUT  0x17,R30
+; 0000 000A DDRA = 0xff;
+	OUT  0x1A,R30
+; 0000 000B DDRC = 0xff;
+	OUT  0x14,R30
+; 0000 000C 
 ; 0000 000D 
-; 0000 000E     while (1)
-_0x4:
+; 0000 000E while (1)
+_0x3:
 ; 0000 000F     {
-; 0000 0010         for (i = 0; i <= 99; i++)
-	LDI  R17,LOW(0)
-_0x8:
-	CPI  R17,100
-	BRSH _0x9
-; 0000 0011         {
-; 0000 0012             unsigned char up_counter = i;
-; 0000 0013             unsigned char down_counter = 99 - i;
-; 0000 0014 
-; 0000 0015             // Extract the digits for the display
-; 0000 0016             digits[0] = down_counter / 10;
-	SBIW R28,2
-;	digits -> Y+12
-;	segment_map -> Y+2
-;	up_counter -> Y+1
-;	down_counter -> Y+0
-	__PUTBSR 17,1
-	LDI  R30,LOW(99)
-	SUB  R30,R17
-	ST   Y,R30
-	LD   R26,Y
+; 0000 0010       PORTA = y;
+	OUT  0x1B,R17
+; 0000 0011       PORTB = d;
+	OUT  0x18,R16
+; 0000 0012       PORTC = s;
+	OUT  0x15,R19
+; 0000 0013       delay_ms(10);
+	LDI  R26,LOW(10)
 	LDI  R27,0
-	LDI  R30,LOW(10)
-	LDI  R31,HIGH(10)
-	CALL __DIVW21
-	STD  Y+12,R30
-; 0000 0017             digits[1] = down_counter % 10;
-	LD   R26,Y
-	CLR  R27
-	LDI  R30,LOW(10)
-	LDI  R31,HIGH(10)
-	CALL __MODW21
-	STD  Y+13,R30
-; 0000 0018             digits[2] = up_counter / 10;
-	LDD  R26,Y+1
-	LDI  R27,0
-	LDI  R30,LOW(10)
-	LDI  R31,HIGH(10)
-	CALL __DIVW21
-	STD  Y+14,R30
-; 0000 0019             digits[3] = up_counter % 10;
-	LDD  R26,Y+1
-	CLR  R27
-	LDI  R30,LOW(10)
-	LDI  R31,HIGH(10)
-	CALL __MODW21
-	STD  Y+15,R30
-; 0000 001A 
-; 0000 001B             // Loop changed to 5 for a 100ms delay.
-; 0000 001C             for (persistence_loop = 0; persistence_loop < 5; persistence_loop++)
-	LDI  R16,LOW(0)
-_0xB:
-	CPI  R16,5
-	BRSH _0xC
-; 0000 001D             {
-; 0000 001E                 // Multiplexing logic (with wire swap fix)
-; 0000 001F                 PORTB = ~0x01;
-	LDI  R30,LOW(254)
-	OUT  0x18,R30
-; 0000 0020                 PORTA = segment_map[digits[2]];
-	LDD  R30,Y+14
-	RCALL SUBOPT_0x0
-; 0000 0021                 delay_ms(5);
-; 0000 0022 
-; 0000 0023                 PORTB = ~0x02;
-	LDI  R30,LOW(253)
-	OUT  0x18,R30
-; 0000 0024                 PORTA = segment_map[digits[1]];
-	LDD  R30,Y+13
-	RCALL SUBOPT_0x0
-; 0000 0025                 delay_ms(5);
-; 0000 0026 
-; 0000 0027                 PORTB = ~0x04;
-	LDI  R30,LOW(251)
-	OUT  0x18,R30
-; 0000 0028                 PORTA = segment_map[digits[0]];
-	LDD  R30,Y+12
-	RCALL SUBOPT_0x0
-; 0000 0029                 delay_ms(5);
-; 0000 002A 
-; 0000 002B                 PORTB = ~0x08;
-	LDI  R30,LOW(247)
-	OUT  0x18,R30
-; 0000 002C                 PORTA = segment_map[digits[3]];
-	LDD  R30,Y+15
-	RCALL SUBOPT_0x0
-; 0000 002D                 delay_ms(5);
-; 0000 002E             }
-	SUBI R16,-1
-	RJMP _0xB
-_0xC:
-; 0000 002F         }
-	ADIW R28,2
+	CALL _delay_ms
+; 0000 0014       y++;
 	SUBI R17,-1
-	RJMP _0x8
+; 0000 0015       if (y>9)
+	CPI  R17,10
+	BRLO _0x6
+; 0000 0016       {
+; 0000 0017         y=0;
+	LDI  R17,LOW(0)
+; 0000 0018         d++;
+	SUBI R16,-1
+; 0000 0019         if (d>9)
+	CPI  R16,10
+	BRLO _0x7
+; 0000 001A         {
+; 0000 001B         s++;
+	SUBI R19,-1
+; 0000 001C         d=0;
+	LDI  R16,LOW(0)
+; 0000 001D         if(s>9)
+	CPI  R19,10
+	BRLO _0x8
+; 0000 001E             {
+; 0000 001F              s=0;
+	LDI  R19,LOW(0)
+; 0000 0020 
+; 0000 0021             }
+; 0000 0022 
+; 0000 0023         }
+_0x8:
+; 0000 0024       }
+_0x7:
+; 0000 0025 
+; 0000 0026 
+; 0000 0027     }
+_0x6:
+	RJMP _0x3
+; 0000 0028 }
 _0x9:
-; 0000 0030     }
-	RJMP _0x4
-; 0000 0031 }
-_0xD:
-	RJMP _0xD
+	RJMP _0x9
 ; .FEND
 
 	.CSEG
-;OPTIMIZER ADDED SUBROUTINE, CALLED 4 TIMES, CODE SIZE REDUCTION:24 WORDS
-SUBOPT_0x0:
-	LDI  R31,0
-	MOVW R26,R28
-	ADIW R26,2
-	ADD  R26,R30
-	ADC  R27,R31
-	LD   R30,X
-	OUT  0x1B,R30
-	LDI  R26,LOW(5)
-	LDI  R27,0
-	JMP  _delay_ms
-
 
 	.CSEG
 _delay_ms:
@@ -1339,91 +1267,6 @@ __delay_ms0:
 	brne __delay_ms0
 __delay_ms1:
 	ret
-
-__ANEGW1:
-	NEG  R31
-	NEG  R30
-	SBCI R31,0
-	RET
-
-__DIVW21U:
-	CLR  R0
-	CLR  R1
-	LDI  R25,16
-__DIVW21U1:
-	LSL  R26
-	ROL  R27
-	ROL  R0
-	ROL  R1
-	SUB  R0,R30
-	SBC  R1,R31
-	BRCC __DIVW21U2
-	ADD  R0,R30
-	ADC  R1,R31
-	RJMP __DIVW21U3
-__DIVW21U2:
-	SBR  R26,1
-__DIVW21U3:
-	DEC  R25
-	BRNE __DIVW21U1
-	MOVW R30,R26
-	MOVW R26,R0
-	RET
-
-__DIVW21:
-	RCALL __CHKSIGNW
-	RCALL __DIVW21U
-	BRTC __DIVW211
-	RCALL __ANEGW1
-__DIVW211:
-	RET
-
-__MODW21:
-	CLT
-	SBRS R27,7
-	RJMP __MODW211
-	COM  R26
-	COM  R27
-	ADIW R26,1
-	SET
-__MODW211:
-	SBRC R31,7
-	RCALL __ANEGW1
-	RCALL __DIVW21U
-	MOVW R30,R26
-	BRTC __MODW212
-	RCALL __ANEGW1
-__MODW212:
-	RET
-
-__CHKSIGNW:
-	CLT
-	SBRS R31,7
-	RJMP __CHKSW1
-	RCALL __ANEGW1
-	SET
-__CHKSW1:
-	SBRS R27,7
-	RJMP __CHKSW2
-	COM  R26
-	COM  R27
-	ADIW R26,1
-	BLD  R0,0
-	INC  R0
-	BST  R0,0
-__CHKSW2:
-	RET
-
-__INITLOCB:
-__INITLOCW:
-	ADD  R26,R28
-	ADC  R27,R29
-__INITLOC0:
-	LPM  R0,Z+
-	ST   X+,R0
-	DEC  R24
-	BRNE __INITLOC0
-	RET
 
 ;END OF CODE MARKER
 __END_OF_CODE:

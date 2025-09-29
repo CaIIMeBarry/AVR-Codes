@@ -1,47 +1,30 @@
-#include <mega32.h>
 #include <delay.h>
-
+#include <mega32.h>
 void main(void)
 {
-    unsigned int counter;
-    unsigned char persistence_loop;
-    unsigned char digits[4];
-    unsigned char segment_map[10] = {
-        ~0x3F, ~0x06, ~0x5B, ~0x4F, ~0x66, ~0x6D, ~0x7D, ~0x07, ~0x7F, ~0x6F
-    };
+char y=0;
+char d=0;
 
-    DDRA = 0xFF;
-    DDRB = 0xFF;
+DDRB = 0xff;
+DDRA = 0xff;
 
-    while (1)
+
+while (1)
     {
-        for (counter = 0; counter < 10000; counter++)
+      PORTA = y;
+      PORTB = d;
+      delay_ms(50);
+      y++;
+      if (y>9)
+      {
+        y=0;
+        d++;
+        if (d>9)
         {
-            digits[0] = counter / 1000;
-            digits[1] = (counter / 100) % 10;
-            digits[2] = (counter / 10) % 10;
-            digits[3] = counter % 10;
-
-            // Loop changed to 2 for a ~50ms delay.
-            for (persistence_loop = 0; persistence_loop < 2; persistence_loop++)
-            {
-                // Compensating for swapped wires D1 and D3
-                PORTB = ~0x01;
-                PORTA = segment_map[digits[2]];
-                delay_ms(5);
-
-                PORTB = ~0x02;
-                PORTA = segment_map[digits[1]];
-                delay_ms(5);
-
-                PORTB = ~0x04;
-                PORTA = segment_map[digits[0]];
-                delay_ms(5);
-
-                PORTB = ~0x08;
-                PORTA = segment_map[digits[3]];
-                delay_ms(5);
-            }
+        d=0;
         }
+      }
+
+
     }
 }
