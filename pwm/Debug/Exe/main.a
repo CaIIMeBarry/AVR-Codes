@@ -1,0 +1,30 @@
+;z/*******************************************************
+;This program was created by the
+;CodeWizardAVR V3.12 Advanced
+;Automatic Program Generator
+;© Copyright 1998-2014 Pavel Haiduc, HP InfoTech s.r.l.
+;http://www.hpinfotech.com
+;
+;Project :
+;Version :
+;Date    : 9/5/2025
+;Author  :
+;Company :
+;Comments:
+;
+;
+;Chip type               : ATmega32
+;Program type            : Application
+;AVR Core Clock frequency: 1.000000 MHz
+;Memory model            : Small
+;External RAM size       : 0
+;Data Stack size         : 512
+;*******************************************************/
+; 0000 0017 
+; 0000 0018 #include <mega32.h>
+
+	.CSEG
+;PCODE: $00000000 VOL: 0
+;PCODE: $00000001 VOL: 0
+;PCODE: $00000002 VOL: 0
+;PCODE: $00000003 VOL: 0
