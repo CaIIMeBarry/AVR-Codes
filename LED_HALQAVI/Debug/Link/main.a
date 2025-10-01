@@ -30,20 +30,19 @@
 
 	.CSEG
 ;PCODE: $0000000D VOL: 0
-; 0000 0006         unsigned char state = 0;
-; 0000 0007         char i;
-; 0000 0008     DDRA = 0xFF;
-;	state -> R17
-;	i -> R16
+; 0000 0006 
+; 0000 0007 char i;
+; 0000 0008 DDRA = 0xFF;
+;	i -> R17
 ;PCODE: $0000000E VOL: 0
 ;PCODE: $0000000F VOL: 0
-;PCODE: $00000010 VOL: 0
-;PCODE: $00000011 VOL: 0
 ; 0000 0009 
 ; 0000 000A     while (1)
-;PCODE: $00000012 VOL: 0
+;PCODE: $00000010 VOL: 0
 ; 0000 000B     {
-; 0000 000C         for ( i = 0; i < 16; i++)
+; 0000 000C         for ( i = 0; i < 8; i++)
+;PCODE: $00000011 VOL: 0
+;PCODE: $00000012 VOL: 0
 ;PCODE: $00000013 VOL: 0
 ;PCODE: $00000014 VOL: 0
 ;PCODE: $00000015 VOL: 0
@@ -51,41 +50,25 @@
 ;PCODE: $00000017 VOL: 0
 ;PCODE: $00000018 VOL: 0
 ;PCODE: $00000019 VOL: 0
+; 0000 000D         {
+; 0000 000E             PORTA = (1 << i);
 ;PCODE: $0000001A VOL: 0
 ;PCODE: $0000001B VOL: 0
-; 0000 000D         {
-; 0000 000E             if (i < 8) {
 ;PCODE: $0000001C VOL: 0
 ;PCODE: $0000001D VOL: 0
+; 0000 000F             delay_ms(500);
 ;PCODE: $0000001E VOL: 0
-; 0000 000F                 state = (state << 1) | 0x01;
 ;PCODE: $0000001F VOL: 0
+; 0000 0010         }
 ;PCODE: $00000020 VOL: 0
 ;PCODE: $00000021 VOL: 0
 ;PCODE: $00000022 VOL: 0
-; 0000 0010             } else {
 ;PCODE: $00000023 VOL: 0
 ;PCODE: $00000024 VOL: 0
-; 0000 0011                 state = (state << 1);
+; 0000 0011     }
 ;PCODE: $00000025 VOL: 0
-; 0000 0012             }
 ;PCODE: $00000026 VOL: 0
-; 0000 0013             PORTA = state;
+; 0000 0012 }
 ;PCODE: $00000027 VOL: 0
 ;PCODE: $00000028 VOL: 0
-; 0000 0014             delay_ms(500);
 ;PCODE: $00000029 VOL: 0
-;PCODE: $0000002A VOL: 0
-; 0000 0015         }
-;PCODE: $0000002B VOL: 0
-;PCODE: $0000002C VOL: 0
-;PCODE: $0000002D VOL: 0
-;PCODE: $0000002E VOL: 0
-;PCODE: $0000002F VOL: 0
-; 0000 0016     }
-;PCODE: $00000030 VOL: 0
-;PCODE: $00000031 VOL: 0
-; 0000 0017 }
-;PCODE: $00000032 VOL: 0
-;PCODE: $00000033 VOL: 0
-;PCODE: $00000034 VOL: 0

@@ -1,5 +1,5 @@
 
-AVRASM ver. 2.1.30  D:\AVR_Projects\HW1_23khordad\LED_JOHNSON\Debug\List\LED_Johnson.asm Sat Jun 14 11:56:37 2025
+AVRASM ver. 2.1.30  E:\HW2_13tir\HW1\Debug\List\Counter quad.asm Sun Jul 06 11:03:24 2025
 
                  
                  
@@ -1180,81 +1180,422 @@ AVRASM ver. 2.1.30  D:\AVR_Projects\HW1_23khordad\LED_JOHNSON\Debug\List\LED_Joh
                  	#endif
                  ;#include <delay.h>
                  ;
-                 ;void main()
+                 ;void main(void)
                  ; 0000 0005 {
                  
                  	.CSEG
                  _main:
                  ; .FSTART _main
-                 ; 0000 0006         unsigned char state = 0;
-                 ; 0000 0007         char i;
-                 ; 0000 0008     DDRA = 0xFF;
-                 ;	state -> R17
-                 ;	i -> R16
+                 ; 0000 0006     unsigned char i = 0;  // memory for up&down counter
+                 ; 0000 0007     unsigned char johnson_state = 0; // initial state for john
+                 ; 0000 0008     unsigned char johnson_step = 0; // first or second half of johnson??
+                 ; 0000 0009     unsigned char ring_state = 0x01;// initial state for ring
+                 ; 0000 000A     char counter_mode = 0;
+                 ; 0000 000B     // 0=idle   1=upward   2=downward  3=john  4=ring
+                 ; 0000 000C     DDRA = 0xFF;
+                 ;	i -> R17
+                 ;	johnson_state -> R16
+                 ;	johnson_step -> R19
+                 ;	ring_state -> R18
+                 ;	counter_mode -> R21
 000045 e010      	LDI  R17,0
-000046 efef      	LDI  R30,LOW(255)
-000047 bbea      	OUT  0x1A,R30
-                 ; 0000 0009 
-                 ; 0000 000A     while (1)
+000046 e000      	LDI  R16,0
+000047 e030      	LDI  R19,0
+000048 e021      	LDI  R18,1
+000049 e050      	LDI  R21,0
+00004a efef      	LDI  R30,LOW(255)
+00004b bbea      	OUT  0x1A,R30
+                 ; 0000 000D     DDRD = 0x00;
+00004c e0e0      	LDI  R30,LOW(0)
+00004d bbe1      	OUT  0x11,R30
+                 ; 0000 000E 
+                 ; 0000 000F     PORTA = i;
+00004e bb1b      	OUT  0x1B,R17
+                 ; 0000 0010 
+                 ; 0000 0011     while (1)
                  _0x3:
-                 ; 0000 000B     {
-                 ; 0000 000C         for ( i = 0; i < 16; i++)
-000048 e000      	LDI  R16,LOW(0)
-                 _0x7:
-000049 3100      	CPI  R16,16
-00004a f478      	BRSH _0x8
-                 ; 0000 000D         {
-                 ; 0000 000E             if (i < 8) {
-00004b 3008      	CPI  R16,8
-00004c f428      	BRSH _0x9
-                 ; 0000 000F                 state = (state << 1) | 0x01;
-00004d 2fe1      	MOV  R30,R17
-00004e 0fee      	LSL  R30
-00004f 60e1      	ORI  R30,1
-000050 2f1e      	MOV  R17,R30
-                 ; 0000 0010             } else {
-000051 c001      	RJMP _0xA
-                 _0x9:
-                 ; 0000 0011                 state = (state << 1);
-000052 0f11      	LSL  R17
-                 ; 0000 0012             }
-                 _0xA:
-                 ; 0000 0013             PORTA = state;
-000053 bb1b      	OUT  0x1B,R17
-                 ; 0000 0014             delay_ms(500);
-000054 efa4      	LDI  R26,LOW(500)
-000055 e0b1      	LDI  R27,HIGH(500)
-000056 940e 005c 	CALL _delay_ms
-                 ; 0000 0015         }
-000058 5f0f      	SUBI R16,-1
-000059 cfef      	RJMP _0x7
+                 ; 0000 0012     {
+                 ; 0000 0013         if (counter_mode == 0) // idle
+00004f 3050      	CPI  R21,0
+000050 f4e1      	BRNE _0x6
+                 ; 0000 0014         {
+                 ; 0000 0015             if (PIND.1 == 0)
+000051 9981      	SBIC 0x10,1
+000052 c004      	RJMP _0x7
+                 ; 0000 0016             {   // upwarddddd
+                 ; 0000 0017                 counter_mode = 1;
+000053 e051      	LDI  R21,LOW(1)
+                 ; 0000 0018                 while(PIND.1 == 0);
                  _0x8:
-                 ; 0000 0016     }
-00005a cfed      	RJMP _0x3
-                 ; 0000 0017 }
+000054 9b81      	SBIS 0x10,1
+000055 cffe      	RJMP _0x8
+                 ; 0000 0019             }
+                 ; 0000 001A             else if (PIND.2 == 0)
+000056 c015      	RJMP _0xB
+                 _0x7:
+000057 9982      	SBIC 0x10,2
+000058 c005      	RJMP _0xC
+                 ; 0000 001B             {   // downwardddd
+                 ; 0000 001C                 i = 255;
+000059 ef1f      	LDI  R17,LOW(255)
+                 ; 0000 001D                 counter_mode = 2;
+00005a e052      	LDI  R21,LOW(2)
+                 ; 0000 001E                 while(PIND.2 == 0);
+                 _0xD:
+00005b 9b82      	SBIS 0x10,2
+00005c cffe      	RJMP _0xD
+                 ; 0000 001F             }
+                 ; 0000 0020             else if (PIND.4 == 0)
+00005d c00e      	RJMP _0x10
+                 _0xC:
+00005e 9984      	SBIC 0x10,4
+00005f c006      	RJMP _0x11
+                 ; 0000 0021             {   // johnnnnn
+                 ; 0000 0022                 johnson_state = 0;
+000060 e000      	LDI  R16,LOW(0)
+                 ; 0000 0023                 johnson_step = 0;
+000061 e030      	LDI  R19,LOW(0)
+                 ; 0000 0024                 counter_mode = 3;
+000062 e053      	LDI  R21,LOW(3)
+                 ; 0000 0025                 while(PIND.4 == 0);
+                 _0x12:
+000063 9b84      	SBIS 0x10,4
+000064 cffe      	RJMP _0x12
+                 ; 0000 0026             }
+                 ; 0000 0027             else if (PIND.3 == 0)
+000065 c006      	RJMP _0x15
+                 _0x11:
+000066 9983      	SBIC 0x10,3
+000067 c004      	RJMP _0x16
+                 ; 0000 0028             {   // ringggg
+                 ; 0000 0029                 ring_state = 0x01;
+000068 e021      	LDI  R18,LOW(1)
+                 ; 0000 002A                 counter_mode = 4;
+000069 e054      	LDI  R21,LOW(4)
+                 ; 0000 002B                 while(PIND.3 == 0);
+                 _0x17:
+00006a 9b83      	SBIS 0x10,3
+00006b cffe      	RJMP _0x17
+                 ; 0000 002C             }
+                 ; 0000 002D         }
+                 _0x16:
+                 _0x15:
+                 _0x10:
                  _0xB:
-00005b cfff      	RJMP _0xB
+                 ; 0000 002E         else if (counter_mode == 1)  //upward
+00006c c076      	RJMP _0x1A
+                 _0x6:
+00006d 3051      	CPI  R21,1
+00006e f4c9      	BRNE _0x1B
+                 ; 0000 002F         {
+                 ; 0000 0030             if (PIND.2 == 0)
+00006f 9982      	SBIC 0x10,2
+000070 c004      	RJMP _0x1C
+                 ; 0000 0031             {
+                 ; 0000 0032                 counter_mode = 2; //downward
+000071 e052      	LDI  R21,LOW(2)
+                 ; 0000 0033                 while(PIND.2 == 0);
+                 _0x1D:
+000072 9b82      	SBIS 0x10,2
+000073 cffe      	RJMP _0x1D
+                 ; 0000 0034                 continue;
+000074 cfda      	RJMP _0x3
+                 ; 0000 0035             }
+                 ; 0000 0036             else if (PIND.4 == 0) //john
+                 _0x1C:
+000075 9984      	SBIC 0x10,4
+000076 c006      	RJMP _0x21
+                 ; 0000 0037             {
+                 ; 0000 0038                 johnson_state = 0;
+000077 e000      	LDI  R16,LOW(0)
+                 ; 0000 0039                 johnson_step = 0;
+000078 e030      	LDI  R19,LOW(0)
+                 ; 0000 003A                 counter_mode = 3;
+000079 e053      	LDI  R21,LOW(3)
+                 ; 0000 003B                 while(PIND.4 == 0);
+                 _0x22:
+00007a 9b84      	SBIS 0x10,4
+00007b cffe      	RJMP _0x22
+                 ; 0000 003C                 continue;
+00007c cfd2      	RJMP _0x3
+                 ; 0000 003D             }
+                 ; 0000 003E             else if (PIND.3 == 0)  //ring
+                 _0x21:
+00007d 9983      	SBIC 0x10,3
+00007e c005      	RJMP _0x26
+                 ; 0000 003F             {
+                 ; 0000 0040                 ring_state = 0x01;
+00007f e021      	LDI  R18,LOW(1)
+                 ; 0000 0041                 counter_mode = 4;
+000080 e054      	LDI  R21,LOW(4)
+                 ; 0000 0042                 while(PIND.3 == 0);
+                 _0x27:
+000081 9b83      	SBIS 0x10,3
+000082 cffe      	RJMP _0x27
+                 ; 0000 0043                 continue;
+000083 cfcb      	RJMP _0x3
+                 ; 0000 0044             }
+                 ; 0000 0045 
+                 ; 0000 0046             PORTA = i;
+                 _0x26:
+000084 bb1b      	OUT  0x1B,R17
+                 ; 0000 0047             i++;
+000085 5f1f      	SUBI R17,-1
+                 ; 0000 0048             delay_ms(200);
+000086 d05e      	RCALL SUBOPT_0x0
+                 ; 0000 0049         }
+                 ; 0000 004A         else if (counter_mode == 2)//downward
+000087 c05b      	RJMP _0x2A
+                 _0x1B:
+000088 3052      	CPI  R21,2
+000089 f4c9      	BRNE _0x2B
+                 ; 0000 004B         {
+                 ; 0000 004C             if (PIND.1 == 0) //upward
+00008a 9981      	SBIC 0x10,1
+00008b c004      	RJMP _0x2C
+                 ; 0000 004D             {
+                 ; 0000 004E                 counter_mode = 1;
+00008c e051      	LDI  R21,LOW(1)
+                 ; 0000 004F                 while(PIND.1 == 0);
+                 _0x2D:
+00008d 9b81      	SBIS 0x10,1
+00008e cffe      	RJMP _0x2D
+                 ; 0000 0050                 continue;
+00008f cfbf      	RJMP _0x3
+                 ; 0000 0051             }
+                 ; 0000 0052             else if (PIND.4 == 0)  //john
+                 _0x2C:
+000090 9984      	SBIC 0x10,4
+000091 c006      	RJMP _0x31
+                 ; 0000 0053             {
+                 ; 0000 0054                 johnson_state = 0;
+000092 e000      	LDI  R16,LOW(0)
+                 ; 0000 0055                 johnson_step = 0;
+000093 e030      	LDI  R19,LOW(0)
+                 ; 0000 0056                 counter_mode = 3;
+000094 e053      	LDI  R21,LOW(3)
+                 ; 0000 0057                 while(PIND.4 == 0);
+                 _0x32:
+000095 9b84      	SBIS 0x10,4
+000096 cffe      	RJMP _0x32
+                 ; 0000 0058                 continue;
+000097 cfb7      	RJMP _0x3
+                 ; 0000 0059             }
+                 ; 0000 005A             else if (PIND.3 == 0)  // ring
+                 _0x31:
+000098 9983      	SBIC 0x10,3
+000099 c005      	RJMP _0x36
+                 ; 0000 005B             {
+                 ; 0000 005C                 ring_state = 0x01;
+00009a e021      	LDI  R18,LOW(1)
+                 ; 0000 005D                 counter_mode = 4;
+00009b e054      	LDI  R21,LOW(4)
+                 ; 0000 005E                 while(PIND.3 == 0);
+                 _0x37:
+00009c 9b83      	SBIS 0x10,3
+00009d cffe      	RJMP _0x37
+                 ; 0000 005F                 continue;
+00009e cfb0      	RJMP _0x3
+                 ; 0000 0060             }
+                 ; 0000 0061 
+                 ; 0000 0062             PORTA = i;
+                 _0x36:
+00009f bb1b      	OUT  0x1B,R17
+                 ; 0000 0063             i--;
+0000a0 5011      	SUBI R17,1
+                 ; 0000 0064             delay_ms(200);
+0000a1 d043      	RCALL SUBOPT_0x0
+                 ; 0000 0065         }
+                 ; 0000 0066         else if (counter_mode == 3)//john
+0000a2 c040      	RJMP _0x3A
+                 _0x2B:
+0000a3 3053      	CPI  R21,3
+0000a4 f511      	BRNE _0x3B
+                 ; 0000 0067         {
+                 ; 0000 0068             if (PIND.1 == 0)
+0000a5 9981      	SBIC 0x10,1
+0000a6 c004      	RJMP _0x3C
+                 ; 0000 0069             {
+                 ; 0000 006A                 counter_mode = 1;
+0000a7 e051      	LDI  R21,LOW(1)
+                 ; 0000 006B                 while(PIND.1 == 0);
+                 _0x3D:
+0000a8 9b81      	SBIS 0x10,1
+0000a9 cffe      	RJMP _0x3D
+                 ; 0000 006C                 continue;
+0000aa cfa4      	RJMP _0x3
+                 ; 0000 006D             }
+                 ; 0000 006E             else if (PIND.2 == 0)
+                 _0x3C:
+0000ab 9982      	SBIC 0x10,2
+0000ac c004      	RJMP _0x41
+                 ; 0000 006F             {
+                 ; 0000 0070                 counter_mode = 2;
+0000ad e052      	LDI  R21,LOW(2)
+                 ; 0000 0071                 while(PIND.2 == 0);
+                 _0x42:
+0000ae 9b82      	SBIS 0x10,2
+0000af cffe      	RJMP _0x42
+                 ; 0000 0072                 continue;
+0000b0 cf9e      	RJMP _0x3
+                 ; 0000 0073             }
+                 ; 0000 0074             else if (PIND.3 == 0)
+                 _0x41:
+0000b1 9983      	SBIC 0x10,3
+0000b2 c005      	RJMP _0x46
+                 ; 0000 0075             {
+                 ; 0000 0076                 ring_state = 0x01;
+0000b3 e021      	LDI  R18,LOW(1)
+                 ; 0000 0077                 counter_mode = 4;
+0000b4 e054      	LDI  R21,LOW(4)
+                 ; 0000 0078                 while(PIND.3 == 0);
+                 _0x47:
+0000b5 9b83      	SBIS 0x10,3
+0000b6 cffe      	RJMP _0x47
+                 ; 0000 0079                 continue;
+0000b7 cf97      	RJMP _0x3
+                 ; 0000 007A             }
+                 ; 0000 007B 
+                 ; 0000 007C             if (johnson_step < 8) {
+                 _0x46:
+0000b8 3038      	CPI  R19,8
+0000b9 f428      	BRSH _0x4A
+                 ; 0000 007D                 johnson_state = (johnson_state << 1) | 0x01;
+0000ba 2fe0      	MOV  R30,R16
+0000bb 0fee      	LSL  R30
+0000bc 60e1      	ORI  R30,1
+0000bd 2f0e      	MOV  R16,R30
+                 ; 0000 007E             } else {
+0000be c001      	RJMP _0x4B
+                 _0x4A:
+                 ; 0000 007F                 johnson_state = (johnson_state << 1);
+0000bf 0f00      	LSL  R16
+                 ; 0000 0080             }
+                 _0x4B:
+                 ; 0000 0081 
+                 ; 0000 0082             PORTA = johnson_state;
+0000c0 bb0b      	OUT  0x1B,R16
+                 ; 0000 0083             delay_ms(200);
+0000c1 d023      	RCALL SUBOPT_0x0
+                 ; 0000 0084 
+                 ; 0000 0085             johnson_step++;
+0000c2 5f3f      	SUBI R19,-1
+                 ; 0000 0086             if (johnson_step == 16)
+0000c3 3130      	CPI  R19,16
+0000c4 f409      	BRNE _0x4C
+                 ; 0000 0087             {
+                 ; 0000 0088                 johnson_step = 0;
+0000c5 e030      	LDI  R19,LOW(0)
+                 ; 0000 0089             }
+                 ; 0000 008A         }
+                 _0x4C:
+                 ; 0000 008B         else if (counter_mode == 4) //ring
+0000c6 c01c      	RJMP _0x4D
+                 _0x3B:
+0000c7 3054      	CPI  R21,4
+0000c8 f4d1      	BRNE _0x4E
+                 ; 0000 008C         {
+                 ; 0000 008D             if (PIND.1 == 0)
+0000c9 9981      	SBIC 0x10,1
+0000ca c004      	RJMP _0x4F
+                 ; 0000 008E             {
+                 ; 0000 008F                 counter_mode = 1;
+0000cb e051      	LDI  R21,LOW(1)
+                 ; 0000 0090                 while(PIND.1 == 0);
+                 _0x50:
+0000cc 9b81      	SBIS 0x10,1
+0000cd cffe      	RJMP _0x50
+                 ; 0000 0091                 continue;
+0000ce cf80      	RJMP _0x3
+                 ; 0000 0092             }
+                 ; 0000 0093             else if (PIND.2 == 0)
+                 _0x4F:
+0000cf 9982      	SBIC 0x10,2
+0000d0 c004      	RJMP _0x54
+                 ; 0000 0094             {
+                 ; 0000 0095                 counter_mode = 2;
+0000d1 e052      	LDI  R21,LOW(2)
+                 ; 0000 0096                 while(PIND.2 == 0);
+                 _0x55:
+0000d2 9b82      	SBIS 0x10,2
+0000d3 cffe      	RJMP _0x55
+                 ; 0000 0097                 continue;
+0000d4 cf7a      	RJMP _0x3
+                 ; 0000 0098             }
+                 ; 0000 0099             else if (PIND.4 == 0)
+                 _0x54:
+0000d5 9984      	SBIC 0x10,4
+0000d6 c006      	RJMP _0x59
+                 ; 0000 009A             {
+                 ; 0000 009B                 johnson_state = 0;
+0000d7 e000      	LDI  R16,LOW(0)
+                 ; 0000 009C                 johnson_step = 0;
+0000d8 e030      	LDI  R19,LOW(0)
+                 ; 0000 009D                 counter_mode = 3;
+0000d9 e053      	LDI  R21,LOW(3)
+                 ; 0000 009E                 while(PIND.4 == 0);
+                 _0x5A:
+0000da 9b84      	SBIS 0x10,4
+0000db cffe      	RJMP _0x5A
+                 ; 0000 009F                 continue;
+0000dc cf72      	RJMP _0x3
+                 ; 0000 00A0             }
+                 ; 0000 00A1 
+                 ; 0000 00A2             PORTA = ring_state; //ring_state = 0x01
+                 _0x59:
+0000dd bb2b      	OUT  0x1B,R18
+                 ; 0000 00A3             delay_ms(200);
+0000de d006      	RCALL SUBOPT_0x0
+                 ; 0000 00A4 
+                 ; 0000 00A5             ring_state <<= 1; //shift
+0000df 0f22      	LSL  R18
+                 ; 0000 00A6 
+                 ; 0000 00A7             if (ring_state == 0)
+0000e0 3020      	CPI  R18,0
+0000e1 f409      	BRNE _0x5D
+                 ; 0000 00A8             {
+                 ; 0000 00A9                 ring_state = 0x01; // all over again
+0000e2 e021      	LDI  R18,LOW(1)
+                 ; 0000 00AA             }
+                 ; 0000 00AB         }
+                 _0x5D:
+                 ; 0000 00AC     }
+                 _0x4E:
+                 _0x4D:
+                 _0x3A:
+                 _0x2A:
+                 _0x1A:
+0000e3 cf6b      	RJMP _0x3
+                 ; 0000 00AD }
+                 _0x5E:
+0000e4 cfff      	RJMP _0x5E
                  ; .FEND
                  
                  	.CSEG
+                 ;OPTIMIZER ADDED SUBROUTINE, CALLED 4 TIMES, CODE SIZE REDUCTION:3 WORDS
+                 SUBOPT_0x0:
+0000e5 eca8      	LDI  R26,LOW(200)
+0000e6 e0b0      	LDI  R27,0
+0000e7 940c 00e9 	JMP  _delay_ms
+                 
                  
                  	.CSEG
                  _delay_ms:
-00005c 9610      	adiw r26,0
-00005d f039      	breq __delay_ms1
+0000e9 9610      	adiw r26,0
+0000ea f039      	breq __delay_ms1
                  __delay_ms0:
                 +
-00005e ef8a     +LDI R24 , LOW ( 0xFA )
-00005f e090     +LDI R25 , HIGH ( 0xFA )
+0000eb ef8a     +LDI R24 , LOW ( 0xFA )
+0000ec e090     +LDI R25 , HIGH ( 0xFA )
                 +__DELAY_USW_LOOP :
-000060 9701     +SBIW R24 , 1
-000061 f7f1     +BRNE __DELAY_USW_LOOP
+0000ed 9701     +SBIW R24 , 1
+0000ee f7f1     +BRNE __DELAY_USW_LOOP
                  	__DELAY_USW 0xFA
-000062 95a8      	wdr
-000063 9711      	sbiw r26,1
-000064 f7c9      	brne __delay_ms0
+0000ef 95a8      	wdr
+0000f0 9711      	sbiw r26,1
+0000f1 f7c9      	brne __delay_ms0
                  __delay_ms1:
-000065 9508      	ret
+0000f2 9508      	ret
                  
                  ;END OF CODE MARKER
                  __END_OF_CODE:
@@ -1277,38 +1618,38 @@ counted separately from r26..r31 here.
 ATmega32 register use summary:
 r0 :   0 r1 :   0 r2 :   0 r3 :   0 r4 :   0 r5 :   0 r6 :   0 r7 :   0 
 r8 :   0 r9 :   0 r10:   0 r11:   0 r12:   0 r13:   0 r14:   0 r15:   0 
-r16:   4 r17:   5 r18:   0 r19:   0 r20:   0 r21:   0 r22:   0 r23:   0 
-r24:   6 r25:   2 r26:   5 r27:   2 r28:   1 r29:   1 r30:  16 r31:   2 
+r16:   9 r17:   7 r18:   9 r19:   9 r20:   0 r21:  22 r22:   0 r23:   0 
+r24:   6 r25:   2 r26:   5 r27:   2 r28:   1 r29:   1 r30:  18 r31:   2 
 x  :   2 y  :   0 z  :   0 
-Registers used: 11 out of 35 (31.4%)
+Registers used: 14 out of 35 (40.0%)
 
 ATmega32 instruction use summary:
 .lds  :   0 .lds.l:   0 .sts  :   0 .sts.l:   0 adc   :   0 add   :   0 
 adiw  :   1 and   :   0 andi  :   0 asr   :   0 bclr  :   0 bld   :   0 
 brbc  :   0 brbs  :   0 brcc  :   0 brcs  :   0 break :   0 breq  :   1 
 brge  :   0 brhc  :   0 brhs  :   0 brid  :   0 brie  :   0 brlo  :   0 
-brlt  :   0 brmi  :   0 brne  :   4 brpl  :   0 brsh  :   2 brtc  :   0 
-brts  :   0 brvc  :   0 brvs  :   0 bset  :   0 bst   :   0 call  :   1 
+brlt  :   0 brmi  :   0 brne  :  11 brpl  :   0 brsh  :   1 brtc  :   0 
+brts  :   0 brvc  :   0 brvs  :   0 bset  :   0 bst   :   0 call  :   0 
 cbi   :   0 cbr   :   0 clc   :   0 clh   :   0 cli   :   1 cln   :   0 
 clr   :   2 cls   :   0 clt   :   0 clv   :   0 clz   :   0 com   :   0 
-cp    :   0 cpc   :   0 cpi   :   2 cpse  :   0 dec   :   1 des   :   0 
+cp    :   0 cpc   :   0 cpi   :   8 cpse  :   0 dec   :   1 des   :   0 
 eor   :   0 fmul  :   0 fmuls :   0 fmulsu:   0 icall :   0 ijmp  :   0 
-in    :   0 inc   :   0 jmp   :  22 ld    :   0 ldd   :   0 ldi   :  17 
-lds   :   0 lpm   :   0 lsl   :   2 lsr   :   0 mov   :   2 movw  :   0 
+in    :   0 inc   :   0 jmp   :  23 ld    :   0 ldd   :   0 ldi   :  52 
+lds   :   0 lpm   :   0 lsl   :   3 lsr   :   0 mov   :   2 movw  :   0 
 mul   :   0 muls  :   0 mulsu :   0 neg   :   0 nop   :   0 or    :   0 
-ori   :   1 out   :   8 pop   :   0 push  :   0 rcall :   0 ret   :   1 
-reti  :   0 rjmp  :   4 rol   :   0 ror   :   0 sbc   :   0 sbci  :   0 
-sbi   :   0 sbic  :   0 sbis  :   0 sbiw  :   3 sbr   :   0 sbrc  :   0 
+ori   :   1 out   :  13 pop   :   0 push  :   0 rcall :   4 ret   :   1 
+reti  :   0 rjmp  :  54 rol   :   0 ror   :   0 sbc   :   0 sbci  :   0 
+sbi   :   0 sbic  :  16 sbis  :  16 sbiw  :   3 sbr   :   0 sbrc  :   0 
 sbrs  :   0 sec   :   0 seh   :   0 sei   :   0 sen   :   0 ser   :   0 
 ses   :   0 set   :   0 sev   :   0 sez   :   0 sleep :   0 spm   :   0 
-st    :   2 std   :   0 sts   :   0 sub   :   0 subi  :   1 swap  :   0 
+st    :   2 std   :   0 sts   :   0 sub   :   0 subi  :   3 swap  :   0 
 tst   :   0 wdr   :   1 
-Instructions used: 21 out of 116 (18.1%)
+Instructions used: 23 out of 116 (19.8%)
 
 ATmega32 memory use summary [bytes]:
 Segment   Begin    End      Code   Data   Used    Size   Use%
 ---------------------------------------------------------------
-[.cseg] 0x000000 0x0000cc    204      0    204   32768   0.6%
+[.cseg] 0x000000 0x0001e6    486      0    486   32768   1.5%
 [.dseg] 0x000060 0x000260      0      0      0    2048   0.0%
 [.eseg] 0x000000 0x000000      0      0      0    1024   0.0%
 

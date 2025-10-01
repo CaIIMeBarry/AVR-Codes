@@ -1176,63 +1176,404 @@ __CLEAR_SRAM:
 	#endif
 ;#include <delay.h>
 ;
-;void main()
+;void main(void)
 ; 0000 0005 {
 
 	.CSEG
 _main:
 ; .FSTART _main
-; 0000 0006         unsigned char state = 0;
-; 0000 0007         char i;
-; 0000 0008     DDRA = 0xFF;
-;	state -> R17
-;	i -> R16
+; 0000 0006     unsigned char i = 0;  // memory for up&down counter
+; 0000 0007     unsigned char johnson_state = 0; // initial state for john
+; 0000 0008     unsigned char johnson_step = 0; // first or second half of johnson??
+; 0000 0009     unsigned char ring_state = 0x01;// initial state for ring
+; 0000 000A     char counter_mode = 0;
+; 0000 000B     // 0=idle   1=upward   2=downward  3=john  4=ring
+; 0000 000C     DDRA = 0xFF;
+;	i -> R17
+;	johnson_state -> R16
+;	johnson_step -> R19
+;	ring_state -> R18
+;	counter_mode -> R21
 	LDI  R17,0
+	LDI  R16,0
+	LDI  R19,0
+	LDI  R18,1
+	LDI  R21,0
 	LDI  R30,LOW(255)
 	OUT  0x1A,R30
-; 0000 0009 
-; 0000 000A     while (1)
+; 0000 000D     DDRD = 0x00;
+	LDI  R30,LOW(0)
+	OUT  0x11,R30
+; 0000 000E 
+; 0000 000F     PORTA = i;
+	OUT  0x1B,R17
+; 0000 0010 
+; 0000 0011     while (1)
 _0x3:
-; 0000 000B     {
-; 0000 000C         for ( i = 0; i < 16; i++)
-	LDI  R16,LOW(0)
+; 0000 0012     {
+; 0000 0013         if (counter_mode == 0) // idle
+	CPI  R21,0
+	BRNE _0x6
+; 0000 0014         {
+; 0000 0015             if (PIND.1 == 0)
+	SBIC 0x10,1
+	RJMP _0x7
+; 0000 0016             {   // upwarddddd
+; 0000 0017                 counter_mode = 1;
+	LDI  R21,LOW(1)
+; 0000 0018                 while(PIND.1 == 0);
+_0x8:
+	SBIS 0x10,1
+	RJMP _0x8
+; 0000 0019             }
+; 0000 001A             else if (PIND.2 == 0)
+	RJMP _0xB
 _0x7:
-	CPI  R16,16
-	BRSH _0x8
-; 0000 000D         {
-; 0000 000E             if (i < 8) {
-	CPI  R16,8
-	BRSH _0x9
-; 0000 000F                 state = (state << 1) | 0x01;
-	MOV  R30,R17
+	SBIC 0x10,2
+	RJMP _0xC
+; 0000 001B             {   // downwardddd
+; 0000 001C                 i = 255;
+	LDI  R17,LOW(255)
+; 0000 001D                 counter_mode = 2;
+	LDI  R21,LOW(2)
+; 0000 001E                 while(PIND.2 == 0);
+_0xD:
+	SBIS 0x10,2
+	RJMP _0xD
+; 0000 001F             }
+; 0000 0020             else if (PIND.4 == 0)
+	RJMP _0x10
+_0xC:
+	SBIC 0x10,4
+	RJMP _0x11
+; 0000 0021             {   // johnnnnn
+; 0000 0022                 johnson_state = 0;
+	LDI  R16,LOW(0)
+; 0000 0023                 johnson_step = 0;
+	LDI  R19,LOW(0)
+; 0000 0024                 counter_mode = 3;
+	LDI  R21,LOW(3)
+; 0000 0025                 while(PIND.4 == 0);
+_0x12:
+	SBIS 0x10,4
+	RJMP _0x12
+; 0000 0026             }
+; 0000 0027             else if (PIND.3 == 0)
+	RJMP _0x15
+_0x11:
+	SBIC 0x10,3
+	RJMP _0x16
+; 0000 0028             {   // ringggg
+; 0000 0029                 ring_state = 0x01;
+	LDI  R18,LOW(1)
+; 0000 002A                 counter_mode = 4;
+	LDI  R21,LOW(4)
+; 0000 002B                 while(PIND.3 == 0);
+_0x17:
+	SBIS 0x10,3
+	RJMP _0x17
+; 0000 002C             }
+; 0000 002D         }
+_0x16:
+_0x15:
+_0x10:
+_0xB:
+; 0000 002E         else if (counter_mode == 1)  //upward
+	RJMP _0x1A
+_0x6:
+	CPI  R21,1
+	BRNE _0x1B
+; 0000 002F         {
+; 0000 0030             if (PIND.2 == 0)
+	SBIC 0x10,2
+	RJMP _0x1C
+; 0000 0031             {
+; 0000 0032                 counter_mode = 2; //downward
+	LDI  R21,LOW(2)
+; 0000 0033                 while(PIND.2 == 0);
+_0x1D:
+	SBIS 0x10,2
+	RJMP _0x1D
+; 0000 0034                 continue;
+	RJMP _0x3
+; 0000 0035             }
+; 0000 0036             else if (PIND.4 == 0) //john
+_0x1C:
+	SBIC 0x10,4
+	RJMP _0x21
+; 0000 0037             {
+; 0000 0038                 johnson_state = 0;
+	LDI  R16,LOW(0)
+; 0000 0039                 johnson_step = 0;
+	LDI  R19,LOW(0)
+; 0000 003A                 counter_mode = 3;
+	LDI  R21,LOW(3)
+; 0000 003B                 while(PIND.4 == 0);
+_0x22:
+	SBIS 0x10,4
+	RJMP _0x22
+; 0000 003C                 continue;
+	RJMP _0x3
+; 0000 003D             }
+; 0000 003E             else if (PIND.3 == 0)  //ring
+_0x21:
+	SBIC 0x10,3
+	RJMP _0x26
+; 0000 003F             {
+; 0000 0040                 ring_state = 0x01;
+	LDI  R18,LOW(1)
+; 0000 0041                 counter_mode = 4;
+	LDI  R21,LOW(4)
+; 0000 0042                 while(PIND.3 == 0);
+_0x27:
+	SBIS 0x10,3
+	RJMP _0x27
+; 0000 0043                 continue;
+	RJMP _0x3
+; 0000 0044             }
+; 0000 0045 
+; 0000 0046             PORTA = i;
+_0x26:
+	OUT  0x1B,R17
+; 0000 0047             i++;
+	SUBI R17,-1
+; 0000 0048             delay_ms(200);
+	RCALL SUBOPT_0x0
+; 0000 0049         }
+; 0000 004A         else if (counter_mode == 2)//downward
+	RJMP _0x2A
+_0x1B:
+	CPI  R21,2
+	BRNE _0x2B
+; 0000 004B         {
+; 0000 004C             if (PIND.1 == 0) //upward
+	SBIC 0x10,1
+	RJMP _0x2C
+; 0000 004D             {
+; 0000 004E                 counter_mode = 1;
+	LDI  R21,LOW(1)
+; 0000 004F                 while(PIND.1 == 0);
+_0x2D:
+	SBIS 0x10,1
+	RJMP _0x2D
+; 0000 0050                 continue;
+	RJMP _0x3
+; 0000 0051             }
+; 0000 0052             else if (PIND.4 == 0)  //john
+_0x2C:
+	SBIC 0x10,4
+	RJMP _0x31
+; 0000 0053             {
+; 0000 0054                 johnson_state = 0;
+	LDI  R16,LOW(0)
+; 0000 0055                 johnson_step = 0;
+	LDI  R19,LOW(0)
+; 0000 0056                 counter_mode = 3;
+	LDI  R21,LOW(3)
+; 0000 0057                 while(PIND.4 == 0);
+_0x32:
+	SBIS 0x10,4
+	RJMP _0x32
+; 0000 0058                 continue;
+	RJMP _0x3
+; 0000 0059             }
+; 0000 005A             else if (PIND.3 == 0)  // ring
+_0x31:
+	SBIC 0x10,3
+	RJMP _0x36
+; 0000 005B             {
+; 0000 005C                 ring_state = 0x01;
+	LDI  R18,LOW(1)
+; 0000 005D                 counter_mode = 4;
+	LDI  R21,LOW(4)
+; 0000 005E                 while(PIND.3 == 0);
+_0x37:
+	SBIS 0x10,3
+	RJMP _0x37
+; 0000 005F                 continue;
+	RJMP _0x3
+; 0000 0060             }
+; 0000 0061 
+; 0000 0062             PORTA = i;
+_0x36:
+	OUT  0x1B,R17
+; 0000 0063             i--;
+	SUBI R17,1
+; 0000 0064             delay_ms(200);
+	RCALL SUBOPT_0x0
+; 0000 0065         }
+; 0000 0066         else if (counter_mode == 3)//john
+	RJMP _0x3A
+_0x2B:
+	CPI  R21,3
+	BRNE _0x3B
+; 0000 0067         {
+; 0000 0068             if (PIND.1 == 0)
+	SBIC 0x10,1
+	RJMP _0x3C
+; 0000 0069             {
+; 0000 006A                 counter_mode = 1;
+	LDI  R21,LOW(1)
+; 0000 006B                 while(PIND.1 == 0);
+_0x3D:
+	SBIS 0x10,1
+	RJMP _0x3D
+; 0000 006C                 continue;
+	RJMP _0x3
+; 0000 006D             }
+; 0000 006E             else if (PIND.2 == 0)
+_0x3C:
+	SBIC 0x10,2
+	RJMP _0x41
+; 0000 006F             {
+; 0000 0070                 counter_mode = 2;
+	LDI  R21,LOW(2)
+; 0000 0071                 while(PIND.2 == 0);
+_0x42:
+	SBIS 0x10,2
+	RJMP _0x42
+; 0000 0072                 continue;
+	RJMP _0x3
+; 0000 0073             }
+; 0000 0074             else if (PIND.3 == 0)
+_0x41:
+	SBIC 0x10,3
+	RJMP _0x46
+; 0000 0075             {
+; 0000 0076                 ring_state = 0x01;
+	LDI  R18,LOW(1)
+; 0000 0077                 counter_mode = 4;
+	LDI  R21,LOW(4)
+; 0000 0078                 while(PIND.3 == 0);
+_0x47:
+	SBIS 0x10,3
+	RJMP _0x47
+; 0000 0079                 continue;
+	RJMP _0x3
+; 0000 007A             }
+; 0000 007B 
+; 0000 007C             if (johnson_step < 8) {
+_0x46:
+	CPI  R19,8
+	BRSH _0x4A
+; 0000 007D                 johnson_state = (johnson_state << 1) | 0x01;
+	MOV  R30,R16
 	LSL  R30
 	ORI  R30,1
-	MOV  R17,R30
-; 0000 0010             } else {
-	RJMP _0xA
-_0x9:
-; 0000 0011                 state = (state << 1);
-	LSL  R17
-; 0000 0012             }
-_0xA:
-; 0000 0013             PORTA = state;
-	OUT  0x1B,R17
-; 0000 0014             delay_ms(500);
-	LDI  R26,LOW(500)
-	LDI  R27,HIGH(500)
-	CALL _delay_ms
-; 0000 0015         }
-	SUBI R16,-1
-	RJMP _0x7
-_0x8:
-; 0000 0016     }
+	MOV  R16,R30
+; 0000 007E             } else {
+	RJMP _0x4B
+_0x4A:
+; 0000 007F                 johnson_state = (johnson_state << 1);
+	LSL  R16
+; 0000 0080             }
+_0x4B:
+; 0000 0081 
+; 0000 0082             PORTA = johnson_state;
+	OUT  0x1B,R16
+; 0000 0083             delay_ms(200);
+	RCALL SUBOPT_0x0
+; 0000 0084 
+; 0000 0085             johnson_step++;
+	SUBI R19,-1
+; 0000 0086             if (johnson_step == 16)
+	CPI  R19,16
+	BRNE _0x4C
+; 0000 0087             {
+; 0000 0088                 johnson_step = 0;
+	LDI  R19,LOW(0)
+; 0000 0089             }
+; 0000 008A         }
+_0x4C:
+; 0000 008B         else if (counter_mode == 4) //ring
+	RJMP _0x4D
+_0x3B:
+	CPI  R21,4
+	BRNE _0x4E
+; 0000 008C         {
+; 0000 008D             if (PIND.1 == 0)
+	SBIC 0x10,1
+	RJMP _0x4F
+; 0000 008E             {
+; 0000 008F                 counter_mode = 1;
+	LDI  R21,LOW(1)
+; 0000 0090                 while(PIND.1 == 0);
+_0x50:
+	SBIS 0x10,1
+	RJMP _0x50
+; 0000 0091                 continue;
 	RJMP _0x3
-; 0000 0017 }
-_0xB:
-	RJMP _0xB
+; 0000 0092             }
+; 0000 0093             else if (PIND.2 == 0)
+_0x4F:
+	SBIC 0x10,2
+	RJMP _0x54
+; 0000 0094             {
+; 0000 0095                 counter_mode = 2;
+	LDI  R21,LOW(2)
+; 0000 0096                 while(PIND.2 == 0);
+_0x55:
+	SBIS 0x10,2
+	RJMP _0x55
+; 0000 0097                 continue;
+	RJMP _0x3
+; 0000 0098             }
+; 0000 0099             else if (PIND.4 == 0)
+_0x54:
+	SBIC 0x10,4
+	RJMP _0x59
+; 0000 009A             {
+; 0000 009B                 johnson_state = 0;
+	LDI  R16,LOW(0)
+; 0000 009C                 johnson_step = 0;
+	LDI  R19,LOW(0)
+; 0000 009D                 counter_mode = 3;
+	LDI  R21,LOW(3)
+; 0000 009E                 while(PIND.4 == 0);
+_0x5A:
+	SBIS 0x10,4
+	RJMP _0x5A
+; 0000 009F                 continue;
+	RJMP _0x3
+; 0000 00A0             }
+; 0000 00A1 
+; 0000 00A2             PORTA = ring_state; //ring_state = 0x01
+_0x59:
+	OUT  0x1B,R18
+; 0000 00A3             delay_ms(200);
+	RCALL SUBOPT_0x0
+; 0000 00A4 
+; 0000 00A5             ring_state <<= 1; //shift
+	LSL  R18
+; 0000 00A6 
+; 0000 00A7             if (ring_state == 0)
+	CPI  R18,0
+	BRNE _0x5D
+; 0000 00A8             {
+; 0000 00A9                 ring_state = 0x01; // all over again
+	LDI  R18,LOW(1)
+; 0000 00AA             }
+; 0000 00AB         }
+_0x5D:
+; 0000 00AC     }
+_0x4E:
+_0x4D:
+_0x3A:
+_0x2A:
+_0x1A:
+	RJMP _0x3
+; 0000 00AD }
+_0x5E:
+	RJMP _0x5E
 ; .FEND
 
 	.CSEG
+;OPTIMIZER ADDED SUBROUTINE, CALLED 4 TIMES, CODE SIZE REDUCTION:3 WORDS
+SUBOPT_0x0:
+	LDI  R26,LOW(200)
+	LDI  R27,0
+	JMP  _delay_ms
+
 
 	.CSEG
 _delay_ms:

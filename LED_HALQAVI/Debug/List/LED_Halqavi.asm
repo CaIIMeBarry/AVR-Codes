@@ -1182,54 +1182,40 @@ __CLEAR_SRAM:
 	.CSEG
 _main:
 ; .FSTART _main
-; 0000 0006         unsigned char state = 0;
-; 0000 0007         char i;
-; 0000 0008     DDRA = 0xFF;
-;	state -> R17
-;	i -> R16
-	LDI  R17,0
+; 0000 0006 
+; 0000 0007 char i;
+; 0000 0008 DDRA = 0xFF;
+;	i -> R17
 	LDI  R30,LOW(255)
 	OUT  0x1A,R30
 ; 0000 0009 
 ; 0000 000A     while (1)
 _0x3:
 ; 0000 000B     {
-; 0000 000C         for ( i = 0; i < 16; i++)
-	LDI  R16,LOW(0)
+; 0000 000C         for ( i = 0; i < 8; i++)
+	LDI  R17,LOW(0)
 _0x7:
-	CPI  R16,16
+	CPI  R17,8
 	BRSH _0x8
 ; 0000 000D         {
-; 0000 000E             if (i < 8) {
-	CPI  R16,8
-	BRSH _0x9
-; 0000 000F                 state = (state << 1) | 0x01;
+; 0000 000E             PORTA = (1 << i);
 	MOV  R30,R17
-	LSL  R30
-	ORI  R30,1
-	MOV  R17,R30
-; 0000 0010             } else {
-	RJMP _0xA
-_0x9:
-; 0000 0011                 state = (state << 1);
-	LSL  R17
-; 0000 0012             }
-_0xA:
-; 0000 0013             PORTA = state;
-	OUT  0x1B,R17
-; 0000 0014             delay_ms(500);
+	LDI  R26,LOW(1)
+	CALL __LSLB12
+	OUT  0x1B,R30
+; 0000 000F             delay_ms(500);
 	LDI  R26,LOW(500)
 	LDI  R27,HIGH(500)
 	CALL _delay_ms
-; 0000 0015         }
-	SUBI R16,-1
+; 0000 0010         }
+	SUBI R17,-1
 	RJMP _0x7
 _0x8:
-; 0000 0016     }
+; 0000 0011     }
 	RJMP _0x3
-; 0000 0017 }
-_0xB:
-	RJMP _0xB
+; 0000 0012 }
+_0x9:
+	RJMP _0x9
 ; .FEND
 
 	.CSEG
@@ -1245,6 +1231,18 @@ __delay_ms0:
 	brne __delay_ms0
 __delay_ms1:
 	ret
+
+__LSLB12:
+	TST  R30
+	MOV  R0,R30
+	MOV  R30,R26
+	BREQ __LSLB12R
+__LSLB12L:
+	LSL  R30
+	DEC  R0
+	BRNE __LSLB12L
+__LSLB12R:
+	RET
 
 ;END OF CODE MARKER
 __END_OF_CODE:

@@ -1,5 +1,5 @@
 
-AVRASM ver. 2.1.30  D:\AVR_Projects\HW1_23khordad\LED_JOHNSON\Debug\List\LED_Johnson.asm Sat Jun 14 11:56:37 2025
+AVRASM ver. 2.1.30  D:\AVR_Projects\HW1_23khordad\LED_HALQAVI\Debug\List\LED_Halqavi.asm Fri Jun 20 22:43:38 2025
 
                  
                  
@@ -1186,75 +1186,73 @@ AVRASM ver. 2.1.30  D:\AVR_Projects\HW1_23khordad\LED_JOHNSON\Debug\List\LED_Joh
                  	.CSEG
                  _main:
                  ; .FSTART _main
-                 ; 0000 0006         unsigned char state = 0;
-                 ; 0000 0007         char i;
-                 ; 0000 0008     DDRA = 0xFF;
-                 ;	state -> R17
-                 ;	i -> R16
-000045 e010      	LDI  R17,0
-000046 efef      	LDI  R30,LOW(255)
-000047 bbea      	OUT  0x1A,R30
+                 ; 0000 0006 
+                 ; 0000 0007 char i;
+                 ; 0000 0008 DDRA = 0xFF;
+                 ;	i -> R17
+000045 efef      	LDI  R30,LOW(255)
+000046 bbea      	OUT  0x1A,R30
                  ; 0000 0009 
                  ; 0000 000A     while (1)
                  _0x3:
                  ; 0000 000B     {
-                 ; 0000 000C         for ( i = 0; i < 16; i++)
-000048 e000      	LDI  R16,LOW(0)
+                 ; 0000 000C         for ( i = 0; i < 8; i++)
+000047 e010      	LDI  R17,LOW(0)
                  _0x7:
-000049 3100      	CPI  R16,16
-00004a f478      	BRSH _0x8
+000048 3018      	CPI  R17,8
+000049 f458      	BRSH _0x8
                  ; 0000 000D         {
-                 ; 0000 000E             if (i < 8) {
-00004b 3008      	CPI  R16,8
-00004c f428      	BRSH _0x9
-                 ; 0000 000F                 state = (state << 1) | 0x01;
-00004d 2fe1      	MOV  R30,R17
-00004e 0fee      	LSL  R30
-00004f 60e1      	ORI  R30,1
-000050 2f1e      	MOV  R17,R30
-                 ; 0000 0010             } else {
-000051 c001      	RJMP _0xA
-                 _0x9:
-                 ; 0000 0011                 state = (state << 1);
-000052 0f11      	LSL  R17
-                 ; 0000 0012             }
-                 _0xA:
-                 ; 0000 0013             PORTA = state;
-000053 bb1b      	OUT  0x1B,R17
-                 ; 0000 0014             delay_ms(500);
-000054 efa4      	LDI  R26,LOW(500)
-000055 e0b1      	LDI  R27,HIGH(500)
-000056 940e 005c 	CALL _delay_ms
-                 ; 0000 0015         }
-000058 5f0f      	SUBI R16,-1
-000059 cfef      	RJMP _0x7
+                 ; 0000 000E             PORTA = (1 << i);
+00004a 2fe1      	MOV  R30,R17
+00004b e0a1      	LDI  R26,LOW(1)
+00004c 940e 0061 	CALL __LSLB12
+00004e bbeb      	OUT  0x1B,R30
+                 ; 0000 000F             delay_ms(500);
+00004f efa4      	LDI  R26,LOW(500)
+000050 e0b1      	LDI  R27,HIGH(500)
+000051 940e 0057 	CALL _delay_ms
+                 ; 0000 0010         }
+000053 5f1f      	SUBI R17,-1
+000054 cff3      	RJMP _0x7
                  _0x8:
-                 ; 0000 0016     }
-00005a cfed      	RJMP _0x3
-                 ; 0000 0017 }
-                 _0xB:
-00005b cfff      	RJMP _0xB
+                 ; 0000 0011     }
+000055 cff1      	RJMP _0x3
+                 ; 0000 0012 }
+                 _0x9:
+000056 cfff      	RJMP _0x9
                  ; .FEND
                  
                  	.CSEG
                  
                  	.CSEG
                  _delay_ms:
-00005c 9610      	adiw r26,0
-00005d f039      	breq __delay_ms1
+000057 9610      	adiw r26,0
+000058 f039      	breq __delay_ms1
                  __delay_ms0:
                 +
-00005e ef8a     +LDI R24 , LOW ( 0xFA )
-00005f e090     +LDI R25 , HIGH ( 0xFA )
+000059 ef8a     +LDI R24 , LOW ( 0xFA )
+00005a e090     +LDI R25 , HIGH ( 0xFA )
                 +__DELAY_USW_LOOP :
-000060 9701     +SBIW R24 , 1
-000061 f7f1     +BRNE __DELAY_USW_LOOP
+00005b 9701     +SBIW R24 , 1
+00005c f7f1     +BRNE __DELAY_USW_LOOP
                  	__DELAY_USW 0xFA
-000062 95a8      	wdr
-000063 9711      	sbiw r26,1
-000064 f7c9      	brne __delay_ms0
+00005d 95a8      	wdr
+00005e 9711      	sbiw r26,1
+00005f f7c9      	brne __delay_ms0
                  __delay_ms1:
-000065 9508      	ret
+000060 9508      	ret
+                 
+                 __LSLB12:
+000061 23ee      	TST  R30
+000062 2e0e      	MOV  R0,R30
+000063 2fea      	MOV  R30,R26
+000064 f019      	BREQ __LSLB12R
+                 __LSLB12L:
+000065 0fee      	LSL  R30
+000066 940a      	DEC  R0
+000067 f7e9      	BRNE __LSLB12L
+                 __LSLB12R:
+000068 9508      	RET
                  
                  ;END OF CODE MARKER
                  __END_OF_CODE:
@@ -1275,40 +1273,40 @@ counted separately from r26..r31 here.
 .dseg memory usage only counts static data declared with .byte
 
 ATmega32 register use summary:
-r0 :   0 r1 :   0 r2 :   0 r3 :   0 r4 :   0 r5 :   0 r6 :   0 r7 :   0 
+r0 :   2 r1 :   0 r2 :   0 r3 :   0 r4 :   0 r5 :   0 r6 :   0 r7 :   0 
 r8 :   0 r9 :   0 r10:   0 r11:   0 r12:   0 r13:   0 r14:   0 r15:   0 
-r16:   4 r17:   5 r18:   0 r19:   0 r20:   0 r21:   0 r22:   0 r23:   0 
-r24:   6 r25:   2 r26:   5 r27:   2 r28:   1 r29:   1 r30:  16 r31:   2 
+r16:   0 r17:   4 r18:   0 r19:   0 r20:   0 r21:   0 r22:   0 r23:   0 
+r24:   6 r25:   2 r26:   7 r27:   2 r28:   1 r29:   1 r30:  18 r31:   2 
 x  :   2 y  :   0 z  :   0 
 Registers used: 11 out of 35 (31.4%)
 
 ATmega32 instruction use summary:
 .lds  :   0 .lds.l:   0 .sts  :   0 .sts.l:   0 adc   :   0 add   :   0 
 adiw  :   1 and   :   0 andi  :   0 asr   :   0 bclr  :   0 bld   :   0 
-brbc  :   0 brbs  :   0 brcc  :   0 brcs  :   0 break :   0 breq  :   1 
+brbc  :   0 brbs  :   0 brcc  :   0 brcs  :   0 break :   0 breq  :   2 
 brge  :   0 brhc  :   0 brhs  :   0 brid  :   0 brie  :   0 brlo  :   0 
-brlt  :   0 brmi  :   0 brne  :   4 brpl  :   0 brsh  :   2 brtc  :   0 
-brts  :   0 brvc  :   0 brvs  :   0 bset  :   0 bst   :   0 call  :   1 
+brlt  :   0 brmi  :   0 brne  :   5 brpl  :   0 brsh  :   1 brtc  :   0 
+brts  :   0 brvc  :   0 brvs  :   0 bset  :   0 bst   :   0 call  :   2 
 cbi   :   0 cbr   :   0 clc   :   0 clh   :   0 cli   :   1 cln   :   0 
 clr   :   2 cls   :   0 clt   :   0 clv   :   0 clz   :   0 com   :   0 
-cp    :   0 cpc   :   0 cpi   :   2 cpse  :   0 dec   :   1 des   :   0 
+cp    :   0 cpc   :   0 cpi   :   1 cpse  :   0 dec   :   2 des   :   0 
 eor   :   0 fmul  :   0 fmuls :   0 fmulsu:   0 icall :   0 ijmp  :   0 
 in    :   0 inc   :   0 jmp   :  22 ld    :   0 ldd   :   0 ldi   :  17 
-lds   :   0 lpm   :   0 lsl   :   2 lsr   :   0 mov   :   2 movw  :   0 
+lds   :   0 lpm   :   0 lsl   :   1 lsr   :   0 mov   :   3 movw  :   0 
 mul   :   0 muls  :   0 mulsu :   0 neg   :   0 nop   :   0 or    :   0 
-ori   :   1 out   :   8 pop   :   0 push  :   0 rcall :   0 ret   :   1 
-reti  :   0 rjmp  :   4 rol   :   0 ror   :   0 sbc   :   0 sbci  :   0 
+ori   :   0 out   :   8 pop   :   0 push  :   0 rcall :   0 ret   :   2 
+reti  :   0 rjmp  :   3 rol   :   0 ror   :   0 sbc   :   0 sbci  :   0 
 sbi   :   0 sbic  :   0 sbis  :   0 sbiw  :   3 sbr   :   0 sbrc  :   0 
 sbrs  :   0 sec   :   0 seh   :   0 sei   :   0 sen   :   0 ser   :   0 
 ses   :   0 set   :   0 sev   :   0 sez   :   0 sleep :   0 spm   :   0 
 st    :   2 std   :   0 sts   :   0 sub   :   0 subi  :   1 swap  :   0 
-tst   :   0 wdr   :   1 
+tst   :   1 wdr   :   1 
 Instructions used: 21 out of 116 (18.1%)
 
 ATmega32 memory use summary [bytes]:
 Segment   Begin    End      Code   Data   Used    Size   Use%
 ---------------------------------------------------------------
-[.cseg] 0x000000 0x0000cc    204      0    204   32768   0.6%
+[.cseg] 0x000000 0x0000d2    210      0    210   32768   0.6%
 [.dseg] 0x000060 0x000260      0      0      0    2048   0.0%
 [.eseg] 0x000000 0x000000      0      0      0    1024   0.0%
 
